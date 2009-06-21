@@ -1,0 +1,48 @@
+FLAC-Convert
+
+----------------------------------------------------------------------
+
+Originally created by nijet99@gmail.com
+
+---------------------------------------------------------------------
+
+
+flacconvert ist a small script that will auto-convert flac files into:
+
+mp3 (320)
+mp3 (V0)
+mp3 (V2)
+ogg
+
+
+
+Current status:  it works
+
+
+
+Current features:
+
+- incremental conversion possible by comparing last modified timestamp (although if aborted during conversion of a file that file won't be auto-deleted)
+- auto-creation of .torrent file
+
+
+
+Usage:
+
+Have a look at all thre files for the settings and adjust accordingly
+Then copy all files into a folder, make sure they are executable and then issue ./flacconvert.sh
+
+
+
+Prerequisites:
+
+- lame
+- flac
+- flac-utils
+- mktorrent
+
+
+
+Todo:
+
+- putting it all into one file
