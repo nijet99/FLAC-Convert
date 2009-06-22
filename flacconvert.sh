@@ -171,33 +171,17 @@ function create_torrents
     # Create .torrent file name to be used
     outputfile="$sourcefolder [$conv].torrent"
 
-    # again timestamps for incremental running
-    ts_folder=`stat -c %Y "$sourcefolder"`
-    if [ -f "$torrentpath$outputfile" ]
-    then
-	ts_output=`stat -c %Y "$torrentpath$outputfile"`
-    else
-	ts_output=0
-    fi
-
-    # check if current folder "." is selected
-    if [ "$sourcefolder" = "." ]
-	then
-	test=""
     # create torrent
-    elif [ ! -f "$torrentpath$outputfile" ]
+    if [ ! -f "$torrentpath$outputfile" ]
 	then
-	mkdir -p $torrentpath$torrentfolder_ne
-	echo "mktorrent -p -a $announce -o $torrentpath$outputfile $sourcefolder"
+	echo "Creating torrent for $sourcefolder"
 	mktorrent -p -a "$announce" -o "$torrentpath$outputfile" "$sourcefolder"
     # if a .torrent already exists yet the folder has changed, create a new torrent in the new_torrent subfolder
-    elif [ "$ts_output" -lt "$ts_folder" ]
+    elif [ "$sourcefolder" -nt "$torrentpath$outputfile" ]
 	then
 	mkdir -p $torrentpath$torrentfolder_new
-	echo "mktorrent -p -a $announce -o $torrentpath$torrentfolder_new$outputfile $sourcefolder"
+	echo "Torrent for $sourcefolder already exists, creating new one in $torrentfolder_new"
 	mktorrent -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder"
-    else
-	test=""
     fi
 
 }
@@ -249,8 +233,8 @@ do
     esac
     convertpath=$basefolder$dest
     cd $convertpath
-    # run the create torrent script
-    find . -maxdepth 1 -type d | while read sourcefolder
+    # run the create torrent script, skip top directory
+    find . -maxdepth 1 -type d |grep -v '^\.$' | while read sourcefolder
     do
 	# run create_torrents function
 	create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv"
