@@ -142,19 +142,8 @@ function convert_flacs
     # set right filename for transcoded file
     outputfile="$basefolder$dest${flacfile%*.*}.$ext"
 
-    # get last modified info original and transcoded file in order to determine if the original has changed
-    # --> incremental update encodings: if you abort during conversion of a file you need to manually delete that file
-    ts_flac=`stat -c %Y "$flacfile"`
-    # check if outputfile exists: if not, assign unitime "0"; if yes, get actual timestamp
-    if [ -f "$outputfile" ]
-    then
-	ts_output=`stat -c %Y "$outputfile"`
-    else
-	ts_output=0
-    fi
-
-    # check if the encoded file is smaller [older] than the original flac file; if so, encode it!
-    if [ "$ts_output" -lt "$ts_flac" ]
+    # check if the encoded file is older than the original flac file; if so, encode it!
+    if [ "$flacfile" -nt "$outputfile" ]
     then
 	case "$ext" in
 	    mp3)	create_mp3 "$flacfile" "$opt" "$outputfile";;
