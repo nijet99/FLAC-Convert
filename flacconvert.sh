@@ -223,9 +223,9 @@ do
     # create folder structure
     find -type d -exec mkdir -p $basefolder$dest{} \;
     # copy desired non-flac files
-    find . \( -name '*.cue' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.png' \) -exec cp -u {} $basefolder$dest{} \;
+    find . \( -iname '*.cue' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' \) -exec cp -u {} $basefolder$dest{} \;
     # find all flac files and pass them on to the actual convert script
-    find . -name '*.flac' | while read flacfile
+    find . -iname '*.flac' | while read flacfile
     do
 	# run convert_flacs function
 	convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
