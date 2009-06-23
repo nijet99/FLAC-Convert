@@ -199,26 +199,29 @@ function create_torrents
 
 
 # convert flacs
-for I in ${!conv_arr[*]}
-do
-    dest="${dest_arr[$I]}"
-    ext="${ext_arr[$I]}"
-    opt="${opt_arr[$I]}"
-
-    cd $flacfolder
-    dest="${dest_arr[$I]}"
-    # create folder structure
-    find -type d -exec mkdir -p $basefolder$dest{} \;
-    # copy desired non-flac files
-    find . \( -iname '*.cue' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' \) -exec cp -u {} $basefolder$dest{} \;
-    # find all flac files and pass them on to the actual convert script
-    find . -iname '*.flac' | while read flacfile
+# if the flac folder does not exist, skip completely as nothing can be converted
+if [ -f $flacfolder ];
+then
+    for I in ${!conv_arr[*]}
     do
-	# run convert_flacs function
-	convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
-    done
-done
+	dest="${dest_arr[$I]}"
+	ext="${ext_arr[$I]}"
+	opt="${opt_arr[$I]}"
 
+	cd $flacfolder
+	dest="${dest_arr[$I]}"
+	# create folder structure
+	find -type d -exec mkdir -p $basefolder$dest{} \;
+	# copy desired non-flac files
+	find . \( -iname '*.cue' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' \) -exec cp -u {} $basefolder$dest{} \;
+	# find all flac files and pass them on to the actual convert script
+	find . -iname '*.flac' | while read flacfile
+	do
+	    # run convert_flacs function
+	    convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
+	done
+    done
+fi
 
 
 # create .torrent files
