@@ -32,47 +32,47 @@ announce_url="http://tracker.domain.com/announce"
 
 # Define the base folder from where everything else is relativ.
 # If you have no common basefolder leave this empty. Trailing slash required.
-basefolder='~/test/'
+basefolder="/home/${USER}/test/"
 
 # Define the folder where the flac albums can be found.
 # Trailing slash required. 
-flacfolder=$basefolder'FLAC/'
+flacfolder=$basefolder"FLAC/"
 
 # Define the folder where the .torrent files shall be stored.
 # Trailing slash required.
-torrentfolder=$basefolder'torrents/'
+torrentfolder=$basefolder"torrents/"
 
 # If you want to have subfolders according to each conversion type (see below) set this value to 1
-torrentsubfolder='0'
+torrentsubfolder="0"
 
-# Define a different folder for newly created torrents to be stored so that existing .torrent files won't be overwritten.
+# Define a different folder for newly created torrents to be stored so that existing .torrent files won"t be overwritten.
 # Trailing slash required.
-torrentfolder_new='torrents_new/'
+torrentfolder_new="torrents_new/"
 
 # Define the conversion "type". This is a reference for the other arrays and only those types will be converted to that are enabled here.
 # Also make sure that the array index number matches the one of the following arrays.
-conv_arr[1]='320'
-conv_arr[2]='V0'
-conv_arr[3]='V2'
-conv_arr[4]='OGG'
+conv_arr[1]="320"
+conv_arr[2]="V0"
+conv_arr[3]="V2"
+conv_arr[4]="OGG"
 
 # Define the destination folder for each type. Trailing slash required.
-dest_arr[1]='What_320/'
-dest_arr[2]='What_V0/'
-dest_arr[3]='What_V2/'
-dest_arr[4]='What_OGG/'
+dest_arr[1]="What_320/"
+dest_arr[2]="What_V0/"
+dest_arr[3]="What_V2/"
+dest_arr[4]="What_OGG/"
 
 # Define the file extension for each type
-ext_arr[1]='mp3'
-ext_arr[2]='mp3'
-ext_arr[3]='mp3'
-ext_arr[4]='ogg'
+ext_arr[1]="mp3"
+ext_arr[2]="mp3"
+ext_arr[3]="mp3"
+ext_arr[4]="ogg"
 
 # Define the conversion options for each type
-opt_arr[1]='--vbr-new -b 320 --replaygain-accurate --id3v2-only'
-opt_arr[2]='--vbr-new -V 0 --replaygain-accurate --id3v2-only'
-opt_arr[3]='--vbr-new -V 2 --replaygain-accurate --id3v2-only'
-opt_arr[4]='-q 8'
+opt_arr[1]="--vbr-new -b 320 --replaygain-accurate --id3v2-only"
+opt_arr[2]="--vbr-new -V 0 --replaygain-accurate --id3v2-only"
+opt_arr[3]="--vbr-new -V 2 --replaygain-accurate --id3v2-only"
+opt_arr[4]="-q 8"
 
 
 
@@ -178,12 +178,12 @@ function create_torrents
     # create torrent
     if [ ! -f "$torrentpath$outputfile" ]
         then
-        mkdir -p $torrentpath
+        mkdir -p "$torrentpath"
         mktorrent -p -a "$announce" -o "$torrentpath$outputfile" "$sourcefolder"
     # if a .torrent already exists yet the folder has changed, create a new torrent in the new_torrent subfolder
     elif [ "$sourcefolder" -nt "$torrentpath$outputfile" ]
         then
-        mkdir -p $torrentpath$torrentfolder_new
+        mkdir -p "$torrentpath$torrentfolder_new"
         mktorrent -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder"
     fi
 
@@ -208,7 +208,7 @@ then
         ext="${ext_arr[$I]}"
         opt="${opt_arr[$I]}"
 
-        cd $flacfolder
+        cd "$flacfolder"
         dest="${dest_arr[$I]}"
         # create folder structure
         find -type d -exec mkdir -p $basefolder$dest{} \;
@@ -237,7 +237,7 @@ do
         1)        torrentpath="$torrentfolder$dest";;
         *)        torrentpath="$torrentfolder";;
     esac
-    cd $basefolder$dest
+    cd "$basefolder$dest"
     # run the create torrent script, skip top directory
     find . -maxdepth 1 -type d |grep -v '^\.$' | while read sourcefolder
     do
