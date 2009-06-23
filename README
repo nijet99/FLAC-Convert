@@ -10,10 +10,10 @@ Originally created by nijet99@gmail.com
 
 flacconvert ist a small script that will auto-convert flac files into:
 
-mp3 (320)
-mp3 (V0)
-mp3 (V2)
-ogg
+- mp3 (320)
+- mp3 (V0)
+- mp3 (V2)
+- ogg
 
 more file formats can easily be added.
 
@@ -32,8 +32,10 @@ Current features:
 
 Usage:
 
-Edit:
-In the upper part of the script the the variables accoringls. The script will convert everything that is unchecked in the conv_arr array.
+Edit flacconvert.sh
+In the upper part of the script the the variables accordingly.
+The script will convert everything that is unchecked in the conv_arr array.
+Note: There's very little error checking for filepaths. Make sure the basefolder or the absolute folder to the flacfolder exists. No flacfolder, no conversions.
 
 Make executable
 chmod 0755 flacconvert.sh
@@ -55,4 +57,6 @@ Prerequisites:
 
 Todo:
 
-right now nothing
+- add (more) error handling
+- add usable output
+- add switches to only run flac conversion or only generate the .torrent files
