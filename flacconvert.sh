@@ -174,13 +174,12 @@ function create_torrents
     # create torrent
     if [ ! -f "$torrentpath$outputfile" ]
 	then
-	echo "Creating torrent for $sourcefolder"
+	mkdir -p $torrentpath
 	mktorrent -p -a "$announce" -o "$torrentpath$outputfile" "$sourcefolder"
     # if a .torrent already exists yet the folder has changed, create a new torrent in the new_torrent subfolder
     elif [ "$sourcefolder" -nt "$torrentpath$outputfile" ]
 	then
 	mkdir -p $torrentpath$torrentfolder_new
-	echo "Torrent for $sourcefolder already exists, creating new one in $torrentfolder_new"
 	mktorrent -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder"
     fi
 
