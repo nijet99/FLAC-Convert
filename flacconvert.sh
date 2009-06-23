@@ -204,22 +204,22 @@ if [ -f $flacfolder ];
 then
     for I in ${!conv_arr[*]}
     do
-	dest="${dest_arr[$I]}"
-	ext="${ext_arr[$I]}"
-	opt="${opt_arr[$I]}"
+        dest="${dest_arr[$I]}"
+        ext="${ext_arr[$I]}"
+        opt="${opt_arr[$I]}"
 
-	cd $flacfolder
-	dest="${dest_arr[$I]}"
-	# create folder structure
-	find -type d -exec mkdir -p $basefolder$dest{} \;
-	# copy desired non-flac files
-	find . \( -iname '*.cue' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' \) -exec cp -u {} $basefolder$dest{} \;
-	# find all flac files and pass them on to the actual convert script
-	find . -iname '*.flac' | while read flacfile
-	do
-	    # run convert_flacs function
-	    convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
-	done
+        cd $flacfolder
+        dest="${dest_arr[$I]}"
+        # create folder structure
+        find -type d -exec mkdir -p $basefolder$dest{} \;
+        # copy desired non-flac files
+        find . \( -iname '*.cue' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' \) -exec cp -u {} $basefolder$dest{} \;
+        # find all flac files and pass them on to the actual convert script
+        find . -iname '*.flac' | while read flacfile
+        do
+        # run convert_flacs function
+        convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
+        done
     done
 fi
 
