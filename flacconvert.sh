@@ -30,27 +30,31 @@
 # Define announce url
 announce_url="http://tracker.domain.com/announce"
 
-# Define the base folder from where everything else is relativ. If you have no common basefolder leave this empty. Trailing slash required.
-basefolder='/home/hyper/Desktop/test/'	
+# Define the base folder from where everything else is relativ.
+# If you have no common basefolder leave this empty. Trailing slash required.
+basefolder='~/test/'	
 
-# Define the folder where the flac albums can be found. Trailing slash required. 
+# Define the folder where the flac albums can be found.
+# Trailing slash required. 
 flacfolder=$basefolder'FLAC/'
 
-# Define the folder where the .torrent files shall be stored. Trailing slash required.
+# Define the folder where the .torrent files shall be stored.
+# Trailing slash required.
 torrentfolder=$basefolder'torrents/'
 
 # If you want to have subfolders according to each conversion type (see below) set this value to 1
 torrentsubfolder='0'
 
-# Define a different folder for newly created torrents to be stored so that existing .torrent files won't be overwritten. Trailing slash required.
+# Define a different folder for newly created torrents to be stored so that existing .torrent files won't be overwritten.
+# Trailing slash required.
 torrentfolder_new='torrents_new/'
 
 # Define the conversion "type". This is a reference for the other arrays and only those types will be converted to that are enabled here.
 # Also make sure that the array index number matches the one of the following arrays.
 conv_arr[1]='320'
-#conv_arr[2]='V0'
-#conv_arr[3]='V2'
-#conv_arr[4]='OGG'
+conv_arr[2]='V0'
+conv_arr[3]='V2'
+conv_arr[4]='OGG'
 
 # Define the destination folder for each type. Trailing slash required.
 dest_arr[1]='What_320/'
