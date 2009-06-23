@@ -45,7 +45,7 @@ torrentfolder=$basefolder"torrents/"
 # If you want to have subfolders according to each conversion type (see below) set this value to 1
 torrentsubfolder="0"
 
-# Define a different folder for newly created torrents to be stored so that existing .torrent files won"t be overwritten.
+# Define a different folder for newly created torrents to be stored so that existing .torrent files won't be overwritten.
 # Trailing slash required.
 torrentfolder_new="torrents_new/"
 
@@ -74,15 +74,20 @@ opt_arr[2]="--vbr-new -V 0 --replaygain-accurate --id3v2-only"
 opt_arr[3]="--vbr-new -V 2 --replaygain-accurate --id3v2-only"
 opt_arr[4]="-q 8"
 
+# If you want to also create .torrent files of your flacs then set this value to 1
+flac_create="1"
+
+# Define what "type" name the .torrent file shall have
+flac_conv="FLAC"
+
+# Define what destination folder the flac .torrents shall go if individual subfolders is selected 
+flac_sub="What_FLAC"
 
 
 ##############################################################################
 #                           DEFINE USER FUNCTIONS                            #
 #                             do not edit below                              #
 ##############################################################################
-
-
-
 
 function create_mp3
 {
@@ -122,8 +127,6 @@ function create_mp3
         - "$outputfile"
 }
 
-
-
 function create_ogg
 {
     flacfile="$1"
@@ -132,8 +135,6 @@ function create_ogg
  
     oggenc $opt "$flacfile" -o "$outputfile"
 }
-
-
 
 function convert_flacs
 {
@@ -159,8 +160,6 @@ function convert_flacs
         touch "$album_dir"
     fi
 }
-
-
 
 function create_torrents
 {
@@ -194,12 +193,10 @@ function create_torrents
 #                             do not edit below                              #
 ##############################################################################
 
-
-
 echo "Starting the flacconvert script."
-echo "Starting conversion of flac files..."
 
 # convert flacs
+echo "Starting conversion of flac files..."
 # if the flac folder does not exist, skip completely as nothing can be converted
 if [ -d "$flacfolder" ]
 then
@@ -227,16 +224,16 @@ else
     echo "... no flac files found."
 fi
 
-
-echo "Starting creation of .torrent files..."
-
 # create .torrent files
+echo "Starting creation of .torrent files..."
 for I in ${!conv_arr[*]}
 do
     conv="${conv_arr[$I]}"
     dest="${dest_arr[$I]}"
     ext="${ext_arr[$I]}"
     opt="${opt_arr[$I]}"
+
+    echo "... for $conv ..."
 
     # go to the right folder
     case "$torrentsubfolder" in
@@ -252,10 +249,37 @@ do
             # run create_torrents function
             create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv"
         done
-        echo "... creation of .torrent files finished."
+        echo "... creation of .torrent files for $conv finished."
+    else
+        echo "... no .torrent files for $conv created."
+    fi
+done
+
+# create .torrent files for the flac files
+echo "Starting creation of .torrent files..."
+if [ "$flac_create" = "1" ]
+then
+
+    echo "... for $flac_conv ..."
+
+    # go to the right folder
+    case "$torrentsubfolder" in
+        1) torrentpath="$torrentfolder$flac_sub";;
+        *) torrentpath="$torrentfolder";;
+    esac
+    if [ -d "$flacfolder" ]
+    then
+        cd "$flacfolder"
+        # run the create torrent script, skip top directory
+        find . -maxdepth 1 -type d |grep -v '^\.$' | while read sourcefolder
+        do
+            # run create_torrents function
+            create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$flac_conv"
+        done
+        echo "... creation of .torrent files for $flac_conv finished."
     else
         echo "... no .torrent files created."
     fi
-done
+fi
 
 echo "Done!"
