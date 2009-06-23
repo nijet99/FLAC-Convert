@@ -237,8 +237,7 @@ do
         1)        torrentpath="$torrentfolder$dest";;
         *)        torrentpath="$torrentfolder";;
     esac
-    convertpath=$basefolder$dest
-    cd $convertpath
+    cd $basefolder$dest
     # run the create torrent script, skip top directory
     find . -maxdepth 1 -type d |grep -v '^\.$' | while read sourcefolder
     do
