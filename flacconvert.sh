@@ -32,7 +32,7 @@ announce_url="http://tracker.domain.com/announce"
 
 # Define the base folder from where everything else is relativ.
 # If you have no common basefolder leave this empty. Trailing slash required.
-basefolder='~/test/'	
+basefolder='~/test/'
 
 # Define the folder where the flac albums can be found.
 # Trailing slash required. 
@@ -113,13 +113,13 @@ function create_mp3
     REPLAYGAIN_ALBUM_PEAK="`metaflac --show-tag=REPLAYGAIN_ALBUM_PEAK "$flacfile" | awk -F = '{ printf($2) }'`"
 
     flac -dc "$flacfile" | lame $opt \
-	--tt "$TITLE" \
-	--tn "$TRACKNUMBER" \
-	--tg "$GENRE" \
-	--ty "$DATE" \
-	--ta "$ARTIST" \
-	--tl "$ALBUM" \
-	- "$outputfile"
+        --tt "$TITLE" \
+        --tn "$TRACKNUMBER" \
+        --tg "$GENRE" \
+        --ty "$DATE" \
+        --ta "$ARTIST" \
+        --tl "$ALBUM" \
+        - "$outputfile"
 }
 
 
@@ -149,14 +149,14 @@ function convert_flacs
     # check if the encoded file is older than the original flac file; if so, encode it!
     if [ "$flacfile" -nt "$outputfile" ]
     then
-	case "$ext" in
-	    mp3)	create_mp3 "$flacfile" "$opt" "$outputfile";;
-	    ogg)	create_ogg "$flacfile" "$opt" "$outputfile";;
-	esac
-	# find album path in order to touch the album dir to change last modified date
-	album_tmp=$(dirname "$outputfile")
-	album_dir="${album_tmp%/Disc [0-9]*}"
-	touch "$album_dir"
+        case "$ext" in
+            mp3)        create_mp3 "$flacfile" "$opt" "$outputfile";;
+            ogg)        create_ogg "$flacfile" "$opt" "$outputfile";;
+        esac
+        # find album path in order to touch the album dir to change last modified date
+        album_tmp=$(dirname "$outputfile")
+        album_dir="${album_tmp%/Disc [0-9]*}"
+        touch "$album_dir"
     fi
 
 }
@@ -177,14 +177,14 @@ function create_torrents
 
     # create torrent
     if [ ! -f "$torrentpath$outputfile" ]
-	then
-	mkdir -p $torrentpath
-	mktorrent -p -a "$announce" -o "$torrentpath$outputfile" "$sourcefolder"
+        then
+        mkdir -p $torrentpath
+        mktorrent -p -a "$announce" -o "$torrentpath$outputfile" "$sourcefolder"
     # if a .torrent already exists yet the folder has changed, create a new torrent in the new_torrent subfolder
     elif [ "$sourcefolder" -nt "$torrentpath$outputfile" ]
-	then
-	mkdir -p $torrentpath$torrentfolder_new
-	mktorrent -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder"
+        then
+        mkdir -p $torrentpath$torrentfolder_new
+        mktorrent -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder"
     fi
 
 }
@@ -234,15 +234,15 @@ do
 
     # go to the right folder
     case "$torrentsubfolder" in
-	1)	torrentpath="$torrentfolder$dest";;
-	*)	torrentpath="$torrentfolder";;
+        1)        torrentpath="$torrentfolder$dest";;
+        *)        torrentpath="$torrentfolder";;
     esac
     convertpath=$basefolder$dest
     cd $convertpath
     # run the create torrent script, skip top directory
     find . -maxdepth 1 -type d |grep -v '^\.$' | while read sourcefolder
     do
-	# run create_torrents function
-	create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv"
+        # run create_torrents function
+        create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv"
     done
 done
