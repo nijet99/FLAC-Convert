@@ -198,7 +198,7 @@ function create_torrents
 
 # convert flacs
 # if the flac folder does not exist, skip completely as nothing can be converted
-if [ -f "$flacfolder" ];
+if [ -d "$flacfolder" ]
 then
     for I in ${!conv_arr[*]}
     do
@@ -218,7 +218,7 @@ then
         # run convert_flacs function
         convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
         done
-done
+    done
 fi
 
 
@@ -235,7 +235,7 @@ do
         1) torrentpath="$torrentfolder$dest";;
         *) torrentpath="$torrentfolder";;
     esac
-    if [ -f "$basefolder$dest" ];
+    if [ -d "$basefolder$dest" ]
     then
         cd "$basefolder$dest"
         # run the create torrent script, skip top directory
