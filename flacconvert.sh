@@ -126,7 +126,7 @@ function create_ogg
     opt="$2"
     outputfile="$3"
 
-    oggenc $opt "$flac" -o "$outputfile"
+    oggenc $opt "$flacfile" -o "$outputfile"
 }
 
 
