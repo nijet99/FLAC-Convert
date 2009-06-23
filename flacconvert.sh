@@ -196,6 +196,9 @@ function create_torrents
 
 
 
+echo "Starting the flacconvert script."
+echo "Starting conversion of flac files..."
+
 # convert flacs
 # if the flac folder does not exist, skip completely as nothing can be converted
 if [ -d "$flacfolder" ]
@@ -219,8 +222,13 @@ then
         convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
         done
     done
+    echo "... conversion of flac files finished."
+else
+    echo "... no flac files found."
 fi
 
+
+echo "Starting creation of .torrent files..."
 
 # create .torrent files
 for I in ${!conv_arr[*]}
@@ -244,5 +252,10 @@ do
             # run create_torrents function
             create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv"
         done
+        echo "... creation of .torrent files finished."
+    else
+        echo "... no .torrent files created."
     fi
 done
+
+echo "Done!"
