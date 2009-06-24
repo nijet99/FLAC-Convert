@@ -49,7 +49,6 @@ Prerequisites:
 
 - lame
 - flac
-- flac-utils
 - mktorrent
 - vorbis-tools
 
@@ -58,5 +57,4 @@ Prerequisites:
 Todo:
 
 - add (more) error handling
-- add usable output
 - add switches to only run flac conversion or only generate the .torrent files
