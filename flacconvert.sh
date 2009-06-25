@@ -231,10 +231,10 @@ then
         do
             # change destination path
             folder="${folder#*/}"
-	    folder_substring=${folder%%/*}
-	    replacement="./$folder_substring$convpath"
+            folder_substring=${folder%%/*}
+            replacement="./$folder_substring$convpath"
             folder=${folder/#$folder_substring/$replacement}
-	    mkdir -p "$basefolder$dest$folder"
+            mkdir -p "$basefolder$dest$folder"
         done
         # copy desired non-flac files
         find . \( -iname '*.cue' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' \) | while read file_org
@@ -242,10 +242,10 @@ then
             # change destination path
             file=$file_org
             file="${file#*/}"
-	    file_substring=${file%%/*}
-	    replacement="./$file_substring$convpath"
+            file_substring=${file%%/*}
+            replacement="./$file_substring$convpath"
             file=${file/#$file_substring/$replacement}
-	    cp -u "$file_org" "$basefolder$dest$file"
+            cp -u "$file_org" "$basefolder$dest$file"
         done
         # find all flac files and pass them on to the actual convert script
         find . -iname '*.flac' | while read flacfile
