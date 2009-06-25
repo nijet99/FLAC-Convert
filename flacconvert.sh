@@ -152,7 +152,6 @@ function convert_flacs
     replacement="./$file_substring$convpath"
     file=${file/#$file_substring/$replacement}
     outputfile="$basefolder$dest${file%*.*}.$ext"
-echo $outputfile
 
     # check if the encoded file is older than the original flac file; if so, encode it!
     if [ "$flacfile" -nt "$outputfile" ]
