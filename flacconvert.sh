@@ -72,6 +72,9 @@ opt_arr[2]="--vbr-new -V 0 --replaygain-accurate --id3v2-only"
 opt_arr[3]="--vbr-new -V 2 --replaygain-accurate --id3v2-only"
 opt_arr[4]="-q 8"
 
+# Add conversion type name to the transcoded folders? Set "0" to NOT add and set "1" to add the conversion name.
+conv_create="1"
+
 # If you want to also create .torrent files of your flacs then set this value to 1
 flac_create="1"
 
@@ -141,9 +144,15 @@ function convert_flacs
     basefolder="$2"
     ext="$3"
     opt="$4"
+    convpath="$5"
 
     # set right filename for transcoded file
-    outputfile="$basefolder$dest${flacfile%*.*}.$ext"
+    file="${flacfile#*/}"
+    file_substring=${file%%/*}
+    replacement="./$file_substring$convpath"
+    file=${file/#$file_substring/$replacement}
+    outputfile="$basefolder$dest${file%*.*}.$ext"
+echo $outputfile
 
     # check if the encoded file is older than the original flac file; if so, encode it!
     if [ "$flacfile" -nt "$outputfile" ]
@@ -167,10 +176,16 @@ function create_torrents
     torrentpath="$3"
     torrentfolder_new="$4"
     conv="$5"
+    conv_create="$6"
+
     torrentname="${sourcefolder##*/}"
 
     # Create .torrent file name to be used
-    outputfile="$sourcefolder [$conv].torrent"
+    case "$conv_create" in
+        1) convpath="";;
+        *) convpath=" [$conv]";;
+    esac
+    outputfile="$sourcefolder$convpath.torrent"
 
     # create torrent
     if [ ! -f "$torrentpath$outputfile" ]
@@ -201,21 +216,43 @@ if [ -d "$flacfolder" ]
 then
     for I in ${!conv_arr[*]}
     do
+        conv="${conv_arr[$I]}"
         dest="${dest_arr[$I]}"
         ext="${ext_arr[$I]}"
         opt="${opt_arr[$I]}"
- 
+        case "$conv_create" in
+            1) convpath=" [$conv]";;
+            *) convpath="";;
+        esac 
+
         cd "$flacfolder"
         dest="${dest_arr[$I]}"
         # create folder structure
-        find -type d -exec mkdir -p $basefolder$dest{} \;
+        find -type d | grep -v '^\.$' | while read folder
+        do
+            # change destination path
+            folder="${folder#*/}"
+	    folder_substring=${folder%%/*}
+	    replacement="./$folder_substring$convpath"
+            folder=${folder/#$folder_substring/$replacement}
+	    mkdir -p "$basefolder$dest$folder"
+        done
         # copy desired non-flac files
-        find . \( -iname '*.cue' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' \) -exec cp -u {} $basefolder$dest{} \;
+        find . \( -iname '*.cue' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' \) | while read file_org
+        do
+            # change destination path
+            file=$file_org
+            file="${file#*/}"
+	    file_substring=${file%%/*}
+	    replacement="./$file_substring$convpath"
+            file=${file/#$file_substring/$replacement}
+	    cp -u "$file_org" "$basefolder$dest$file"
+        done
         # find all flac files and pass them on to the actual convert script
         find . -iname '*.flac' | while read flacfile
         do
             # run convert_flacs function
-            convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
+            convert_flacs "$flacfile" "$basefolder" "$ext" "$opt" "$convpath"
         done
     done
     echo "... conversion of flac files finished."
@@ -243,10 +280,10 @@ do
     then
         cd "$basefolder$dest"
         # run the create torrent script, skip top directory
-        find . -maxdepth 1 -type d |grep -v '^\.$' | while read sourcefolder
+        find . -maxdepth 1 -type d | grep -v '^\.$' | while read sourcefolder
         do
             # run create_torrents function
-            create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv"
+            create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv" "$conv_create"
         done
         echo "... creation of .torrent files for $conv finished."
     else
@@ -273,7 +310,7 @@ then
         find . -maxdepth 1 -type d |grep -v '^\.$' | while read sourcefolder
         do
             # run create_torrents function
-            create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$flac_conv"
+            create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$flac_conv"  "$conv_create"
         done
         echo "... creation of .torrent files for $flac_conv finished."
     else
