@@ -214,8 +214,8 @@ then
         # find all flac files and pass them on to the actual convert script
         find . -iname '*.flac' | while read flacfile
         do
-        # run convert_flacs function
-        convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
+            # run convert_flacs function
+            convert_flacs "$flacfile" "$basefolder" "$ext" "$opt"
         done
     done
     echo "... conversion of flac files finished."
