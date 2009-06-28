@@ -190,7 +190,7 @@ function create_torrents
     if [ ! -f "$torrentpath$outputfile" ]
     then
         mkdir -p "$torrentpath"
-        mktorrent -n "$torrentname [$conv]" -p -a "$announce" -o "$torrentpath$outputfile" "$sourcefolder"
+        mktorrent -n "$torrentname$convpath" -p -a "$announce" -o "$torrentpath$outputfile" "$sourcefolder"
     # if a .torrent already exists yet the folder has changed, create a new torrent in the new_torrent subfolder
     elif [ "$sourcefolder" -nt "$torrentpath$outputfile" ]
     then
