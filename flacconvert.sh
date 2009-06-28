@@ -195,7 +195,7 @@ function create_torrents
     elif [ "$sourcefolder" -nt "$torrentpath$outputfile" ]
     then
         mkdir -p "$torrentpath$torrentfolder_new"
-        mktorrent -n "$torrentname [$conv]" -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder"
+        mktorrent -n "$torrentname$convpath" -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder"
     fi
 }
 
