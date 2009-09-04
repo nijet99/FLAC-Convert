@@ -67,7 +67,7 @@ ext_arr[3]="mp3"
 ext_arr[4]="ogg"
 
 # Define the conversion options for each type
-opt_arr[1]="--vbr-new -b 320 --replaygain-accurate --id3v2-only"
+opt_arr[1]="-b 320 --replaygain-accurate --id3v2-only"
 opt_arr[2]="--vbr-new -V 0 --replaygain-accurate --id3v2-only"
 opt_arr[3]="--vbr-new -V 2 --replaygain-accurate --id3v2-only"
 opt_arr[4]="-q 8"
