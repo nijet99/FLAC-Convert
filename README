@@ -58,3 +58,5 @@ Todo:
 
 - add (more) error handling
 - add switches to only run flac conversion or only generate the .torrent files
+- better this README
+- add examples to the README

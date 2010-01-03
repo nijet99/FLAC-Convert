@@ -75,6 +75,11 @@ opt_arr[4]="-q 8"
 # Add conversion type name to the transcoded folders? Set "0" to NOT add and set "1" to add the conversion name.
 conv_create="1"
 
+# There is currently a bug with mktorrent with the -n option. Basically -n should only change the name being displayed in the torrent client.
+# However if -n is used to alter the name it also alters the path. When you want to have displayes "torrent name [FLAC]" or anything else,
+# Then you'll also have to rename the folder / file to that. I have contacted the author of mktorrent here: http://github.com/esmil/mktorrent/issues#issue/2
+# If you still want to have a [FLAC] added to the torrent naming, then alter line 189 and change 2) to 1)
+
 # If you want to also create .torrent files of your flacs then set this value to 1
 flac_create="1"
 
@@ -181,7 +186,7 @@ function create_torrents
 
     # Create .torrent file name to be used
     case "$conv_create" in
-        1) convpath="";;
+        2) convpath=" [$conf]";;
         *) convpath=" [$conv]";;
     esac
     outputfile="$sourcefolder$convpath.torrent"
