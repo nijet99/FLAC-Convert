@@ -95,13 +95,28 @@ flac_sub="What_FLAC"
 #                             do not edit below                              #
 ##############################################################################
 
+# determine maximal number of parallel jobs and add 1
+maxnum=`grep -c '^processor' /proc/cpuinfo`
+maxnum=$(($maxnum+1))
+
+# enable ctrl-c abort
+control_c()
+{
+    for f in `jobs -p`; do
+        kill $f 2> /dev/null
+    done
+    wait
+    exit $?
+}
+trap control_c SIGINT
+
 function create_mp3
 {
     flacfile="$1"
     opt="$2"
     outputfile="$3"
 
-    # get the id tags... not all are supported by idv3 for mp3s
+    # get the id tags... not all are supported by id3v2 for mp3s
     TITLE="`metaflac --show-tag=TITLE "$flacfile" | awk -F = '{ printf($2) }'`"
     ARTIST="`metaflac --show-tag=ARTIST "$flacfile" | awk -F = '{ printf($2) }'`"
     ALBUM="`metaflac --show-tag=ALBUM "$flacfile" | awk -F = '{ printf($2) }'`"
@@ -123,14 +138,19 @@ function create_mp3
     REPLAYGAIN_ALBUM_GAIN="`metaflac --show-tag=REPLAYGAIN_ALBUM_GAIN "$flacfile" | awk -F = '{ printf($2) }'`"
     REPLAYGAIN_ALBUM_PEAK="`metaflac --show-tag=REPLAYGAIN_ALBUM_PEAK "$flacfile" | awk -F = '{ printf($2) }'`"
 
-    flac -dc "$flacfile" | lame $opt \
-        --tt "$TITLE" \
-        --tn "$TRACKNUMBER" \
-        --tg "$GENRE" \
-        --ty "$DATE" \
-        --ta "$ARTIST" \
-        --tl "$ALBUM" \
-        - "$outputfile"
+    # sleep while max number of jobs are running
+    until ((`jobs | wc -l` < maxnum)); do
+        sleep 1
+    done
+
+    nice flac -dc "$flacfile" | lame $opt \
+		     --tt "$TITLE" \
+             --tn "$TRACKNUMBER" \
+             --tg "$GENRE" \
+             --ty "$DATE" \
+             --ta "$ARTIST" \
+             --tl "$ALBUM" \
+             - "$outputfile" &
 }
 
 function create_ogg
@@ -138,8 +158,14 @@ function create_ogg
     flacfile="$1"
     opt="$2"
     outputfile="$3"
- 
-    oggenc $opt "$flacfile" -o "$outputfile"
+
+
+    # sleep while max number of jobs are running
+    until ((`jobs | wc -l` < maxnum)); do
+        sleep 1
+    done
+
+    nice oggenc $opt "$flacfile" -o "$outputfile" &
 }
 
 function convert_flacs
@@ -195,12 +221,22 @@ function create_torrents
     if [ ! -f "$torrentpath$outputfile" ]
     then
         mkdir -p "$torrentpath"
-        mktorrent -n "$torrentname$convpath" -p -a "$announce" -o "$torrentpath$outputfile" "$sourcefolder"
+        # sleep while max number of jobs are running
+        until ((`jobs | wc -l` < maxnum)); do
+            sleep 1
+        done
+        # start new job and add it to the background
+        nice mktorrent -n "$torrentname$convpath" -p -a "$announce" -o "$torrentpath$outputfile" "$sourcefolder" &
     # if a .torrent already exists yet the folder has changed, create a new torrent in the new_torrent subfolder
     elif [ "$sourcefolder" -nt "$torrentpath$outputfile" ]
     then
         mkdir -p "$torrentpath$torrentfolder_new"
-        mktorrent -n "$torrentname$convpath" -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder"
+        # sleep while max number of jobs are running
+        until ((`jobs | wc -l` < maxnum)); do
+            sleep 1
+        done
+        # start new job and add it to the background
+        nice mktorrent -n "$torrentname$convpath" -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder" &
     fi
 }
 

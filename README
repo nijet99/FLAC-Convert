@@ -25,6 +25,7 @@ Current status:  it works
 
 Current features:
 
+- MULTI-THREADING: that makes transcoding much faster
 - incremental conversion possible by comparing last modified timestamp (although if aborted during conversion of a file that file won't be auto-deleted)
 - auto-creation of .torrent file
 
