@@ -1,29 +1,30 @@
 #!/bin/bash
 
 
-#############################################################################
-#                                                                           #
-# Copyright 2009, nijet99@gmail.com                                         #
-#                                                                           #
-# FLAC-Convert is free software: you can redistribute it and/or modify      #
-# it under the terms of the GNU General Public License as published by      #
-# the Free Software Foundation, either version 3 of the License, or         #
-# (at your option) any later version.                                       #
-#                                                                           #
-# FLAC-Convert is distributed in the hope that it will be useful,           #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of            #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              #
-# GNU General Public License for more details.                              #
-#                                                                           #
-# You should have received a copy of the GNU General Public License         #
-# along with FLAC-Convert. If not, see <http://www.gnu.org/licenses/>.      #
-#                                                                           #
-#############################################################################
+#################################################################################
+#                                                                               #
+# Copyright 2009, nijet99@gmail.com                                             #
+# Copyright (C) 2010 Jos van den Oever <jos@vandenoever.info> [multi-threading] #
+#                                                                               #
+# FLAC-Convert is free software: you can redistribute it and/or modify          #
+# it under the terms of the GNU General Public License as published by          #
+# the Free Software Foundation, either version 3 of the License, or             #
+# (at your option) any later version.                                           #
+#                                                                               #
+# FLAC-Convert is distributed in the hope that it will be useful,               #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of                #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                  #
+# GNU General Public License for more details.                                  #
+#                                                                               #
+# You should have received a copy of the GNU General Public License             #
+# along with FLAC-Convert. If not, see <http://www.gnu.org/licenses/>.          #
+#                                                                               #
+#################################################################################
 
 
-##############################################################################
-#                             DEFINE VARIABLES                               #
-##############################################################################
+#################################################################################
+#                              DEFINE VARIABLES                                 #
+#################################################################################
 
 # Define announce url
 announce_url="http://tracker.domain.com/announce"
@@ -90,10 +91,10 @@ flac_conv="FLAC"
 flac_sub="What_FLAC"
 
 
-##############################################################################
-#                           DEFINE USER FUNCTIONS                            #
-#                             do not edit below                              #
-##############################################################################
+#################################################################################
+#                             DEFINE USER FUNCTIONS                             #
+#                               do not edit below                               #
+#################################################################################
 
 # determine maximal number of parallel jobs and add 1
 maxnum=`grep -c '^processor' /proc/cpuinfo`
@@ -242,10 +243,10 @@ function create_torrents
 
 
 
-##############################################################################
-#                               SCRIPT CONTROL                               #
-#                             do not edit below                              #
-##############################################################################
+#################################################################################
+#                                 SCRIPT CONTROL                                #
+#                               do not edit below                               #
+#################################################################################
 
 echo "Starting the flacconvert script."
 
