@@ -148,14 +148,19 @@ function create_mp3
         sleep 1
     done
 
-    nice flac -dc "$flacfile" | lame $opt \
+    echo "Encoding `basename "$flacfile"` to $outputfile"
+    nice flac -dcs "$flacfile" | lame $opt \
 		     --tt "$TITLE" \
              --tn "$TRACKNUMBER" \
              --tg "$GENRE" \
              --ty "$DATE" \
              --ta "$ARTIST" \
              --tl "$ALBUM" \
-             - "$outputfile" &
+             - "$outputfile" &>/dev/null &
+    if [ $? -ne 0 ]
+    then
+        echo "WARNING: Return code of lame indicates failure"
+    fi
 }
 
 function create_ogg
@@ -170,7 +175,12 @@ function create_ogg
         sleep 1
     done
 
-    nice oggenc $opt "$flacfile" -o "$outputfile" &
+    echo "Encoding `basename "$flacfile"` to $outputfile"
+    nice oggenc $opt "$flacfile" -o "$outputfile" &>/dev/null &
+    if [ $? -ne 0 ]
+    then
+        echo "WARNING: Return code of oggenc indicates failure"
+    fi
 }
 
 function create_aac
@@ -190,14 +200,19 @@ function create_aac
         sleep 1
     done
 
-    nice flac -dc "$flacfile" | faac $opt \
+    echo "Encoding `basename "$flacfile"` to $outputfile"
+    nice flac -dcs "$flacfile" | faac $opt \
         --title "$TITLE" \
         --track "$TRACKNUMBER" \
         --artist "$ARTIST" \
         --year "$DATE" \
         --album "$ALBUM" \
         -o "$outputfile" \
-        - &
+        - &>/dev/null &
+    if [ $? -ne 0 ]
+    then
+        echo "WARNING: Return code of faac indicates failure"
+    fi
 }
 
 function convert_flacs
