@@ -14,6 +14,7 @@ flacconvert ist a small script that will auto-convert flac files into:
 - mp3 (V0)
 - mp3 (V2)
 - ogg
+- aac
 
 more file formats can easily be added.
 
@@ -52,6 +53,7 @@ Prerequisites:
 - flac
 - mktorrent
 - vorbis-tools
+- faac
 
 
 
