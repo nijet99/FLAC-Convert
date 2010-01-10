@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 #################################################################################
 #                                                                               #
 # Copyright 2009, nijet99@gmail.com                                             #
@@ -166,13 +165,13 @@ function create_mp3
 
     echo "Encoding `basename "$flacfile"` to $outputfile"
     nice flac -dcs "$flacfile" | lame $opt \
-		     --tt "$TITLE" \
-             --tn "$TRACKNUMBER" \
-             --tg "$GENRE" \
-             --ty "$DATE" \
-             --ta "$ARTIST" \
-             --tl "$ALBUM" \
-             - "$outputfile" &>/dev/null &
+	--tt "$TITLE" \
+        --tn "$TRACKNUMBER" \
+        --tg "$GENRE" \
+        --ty "$DATE" \
+        --ta "$ARTIST" \
+        --tl "$ALBUM" \
+        - "$outputfile" &>/dev/null &
     check_exit_codes flac lame
 }
 
@@ -181,7 +180,6 @@ function create_ogg
     flacfile="$1"
     opt="$2"
     outputfile="$3"
-
 
     # sleep while max number of jobs are running
     until ((`jobs | wc -l` < maxnum)); do
