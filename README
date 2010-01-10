@@ -1,65 +1,35 @@
-FLAC-Convert
+FLAC-Convert                             Originally created by nijet99@gmail.com
+--------------------------------------------------------------------------------
 
-----------------------------------------------------------------------
-
-Originally created by nijet99@gmail.com
-
----------------------------------------------------------------------
+FLAC-Convert is a script that automatically converts flac files into
+MP3 (320kbps, V0, V2), OGG, and AAC.
 
 
+Features:
+ - Multithreaded conversion.
+ - On demand conversion on a directory tree. Only new and changed
+   files are converted.
+ - Automatic creation of torrent files for each directory (album)
 
-flacconvert ist a small script that will auto-convert flac files into:
 
-- mp3 (320)
-- mp3 (V0)
-- mp3 (V2)
-- ogg
-- aac
+Usage:
+ - Customize your settings at the top of the script.
+ - Comment out conv_arr entries for the formats you do not want to
+   encode.
+ - Run the script.
+
+
+Requirements:
+ - LAME (for MP3 encoding)
+ - flac
+ - mktorrent (for torrent file creation)
+ - vorbis-tools (for ogg encoding)
+ - faac (for AAC encoding)
 
 more file formats can easily be added.
 
 
-
-Current status:  it works
-
-
-
-Current features:
-
-- MULTI-THREADING: that makes transcoding much faster
-- incremental conversion possible by comparing last modified timestamp (although if aborted during conversion of a file that file won't be auto-deleted)
-- auto-creation of .torrent file
-
-
-
-Usage:
-
-Edit flacconvert.sh
-In the upper part of the script the the variables accordingly.
-The script will convert everything that is unchecked in the conv_arr array.
-Note: There's very little error checking for filepaths. Make sure the basefolder or the absolute folder to the flacfolder exists. No flacfolder, no conversions.
-
-Make executable
-chmod 0755 flacconvert.sh
-
-Run:
-./flacconvert.sh
-
-
-
-Prerequisites:
-
-- lame
-- flac
-- mktorrent
-- vorbis-tools
-- faac
-
-
-
-Todo:
-
-- add (more) error handling
-- add switches to only run flac conversion or only generate the .torrent files
-- better this README
-- add examples to the README
+Known issues:
+ - Minimal error handling
+ - There must not be any existing jobs running in the background when
+   the script is launched.
