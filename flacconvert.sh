@@ -2,8 +2,7 @@
 
 #################################################################################
 #                                                                               #
-# Copyright 2009, nijet99@gmail.com                                             #
-# Copyright (C) 2010 Jos van den Oever <jos@vandenoever.info> [multi-threading] #
+# Copyright (C) 2009-2010, FLAC-Convert team                                    #
 #                                                                               #
 # FLAC-Convert is free software: you can redistribute it and/or modify          #
 # it under the terms of the GNU General Public License as published by          #
