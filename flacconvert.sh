@@ -115,6 +115,22 @@ control_c()
 }
 trap control_c SIGINT
 
+function check_exit_codes
+{
+    local ps=${PIPESTATUS[*]}
+    local args=( `echo $@` )
+    local i=0
+    for s in $ps
+    do
+        if [ $s -ne 0 ]
+        then
+            echo "WARNING: Return code of ${args[$i]} indicates failure"
+            break
+        fi
+        let i=$i+1
+    done
+}
+
 function create_mp3
 {
     flacfile="$1"
@@ -157,10 +173,7 @@ function create_mp3
              --ta "$ARTIST" \
              --tl "$ALBUM" \
              - "$outputfile" &>/dev/null &
-    if [ $? -ne 0 ]
-    then
-        echo "WARNING: Return code of lame indicates failure"
-    fi
+    check_exit_codes flac lame
 }
 
 function create_ogg
@@ -177,10 +190,7 @@ function create_ogg
 
     echo "Encoding `basename "$flacfile"` to $outputfile"
     nice oggenc $opt "$flacfile" -o "$outputfile" &>/dev/null &
-    if [ $? -ne 0 ]
-    then
-        echo "WARNING: Return code of oggenc indicates failure"
-    fi
+    check_exit_codes oggenc
 }
 
 function create_aac
@@ -209,10 +219,7 @@ function create_aac
         --album "$ALBUM" \
         -o "$outputfile" \
         - &>/dev/null &
-    if [ $? -ne 0 ]
-    then
-        echo "WARNING: Return code of faac indicates failure"
-    fi
+    check_exit_codes flac faac
 }
 
 function convert_flacs
