@@ -242,6 +242,7 @@ function convert_flacs
         case "$ext" in
             mp3) create_mp3 "$flacfile" "$opt" "$outputfile";;
             ogg) create_ogg "$flacfile" "$opt" "$outputfile";;
+            m4a) create_aac "$flacfile" "$opt" "$outputfile";;
         esac
         # find album path in order to touch the album dir to change last modified date
         album_tmp=$(dirname "$outputfile")
