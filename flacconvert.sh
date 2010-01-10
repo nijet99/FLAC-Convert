@@ -54,24 +54,28 @@ conv_arr[1]="320"
 conv_arr[2]="V0"
 conv_arr[3]="V2"
 conv_arr[4]="OGG"
+conv_arr[5]="AAC"
 
 # Define the destination folder for each type. Trailing slash required.
 dest_arr[1]="What_320/"
 dest_arr[2]="What_V0/"
 dest_arr[3]="What_V2/"
 dest_arr[4]="What_OGG/"
+dest_arr[5]="What_AAC/"
 
 # Define the file extension for each type
 ext_arr[1]="mp3"
 ext_arr[2]="mp3"
 ext_arr[3]="mp3"
 ext_arr[4]="ogg"
+ext_arr[5]="m4a"
 
 # Define the conversion options for each type
 opt_arr[1]="-b 320 --replaygain-accurate --id3v2-only"
 opt_arr[2]="--vbr-new -V 0 --replaygain-accurate --id3v2-only"
 opt_arr[3]="--vbr-new -V 2 --replaygain-accurate --id3v2-only"
 opt_arr[4]="-q 8"
+opt_arr[5]="-PRBCw -c 22050 -b 320"
 
 # Add conversion type name to the transcoded folders? Set "0" to NOT add and set "1" to add the conversion name.
 conv_create="1"
@@ -167,6 +171,33 @@ function create_ogg
     done
 
     nice oggenc $opt "$flacfile" -o "$outputfile" &
+}
+
+function create_aac
+{
+    flacfile="$1"
+    opt="$2"
+    outputfile="$3"
+
+    TITLE="`metaflac --show-tag=TITLE "$flacfile" | awk -F = '{ printf($2) }'`"
+    ARTIST="`metaflac --show-tag=ARTIST "$flacfile" | awk -F = '{ printf($2) }'`"
+    DATE="`metaflac --show-tag=DATE "$flacfile" | awk -F = '{ printf($2) }'`"
+    ALBUM="`metaflac --show-tag=ALBUM "$flacfile" | awk -F = '{ printf($2) }'`"
+    TRACKNUMBER="`metaflac --show-tag=TRACKNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
+
+    # sleep while max number of jobs are running
+    until ((`jobs | wc -l` < maxnum)); do
+        sleep 1
+    done
+
+    nice flac -dc "$flacfile" | faac $opt \
+        --title "$TITLE" \
+        --track "$TRACKNUMBER" \
+        --artist "$ARTIST" \
+        --year "$DATE" \
+        --album "$ALBUM" \
+        -o "$outputfile" \
+        - &
 }
 
 function convert_flacs
