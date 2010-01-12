@@ -10,6 +10,7 @@ Features:
  - On demand conversion on a directory tree. Only new and changed
    files are converted.
  - Automatic creation of torrent files for each directory (album)
+ - Depending on the setting it can only convert music files, only create .torrent files, do conversion and creation
 
 
 Usage:
