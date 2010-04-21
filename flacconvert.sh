@@ -375,10 +375,22 @@ then
     fi
 fi
 
+	for running in ${running_arr[@]}
+	do
+		echo "... waiting for $running to be finished ..."
+        while [ -z "$(pgrep $running)" ]; do
+            sleep 1
+        done
+		echo "... $running finished ..."
+    done
 
 # check if current run level is set to only convert music files; if not, create .torrents
 if [ "$run_level" != "0" ]
 then
+    # Wait for all conversions to be finsihed so that torrent creation doesn't get corrupted
+    # See: http://mywiki.wooledge.org/ProcessManagement#I_want_to_run_two_jobs_in_the_background.2C_and_then_wait_until_they_both_finish
+    wait
+
     # create .torrent files
     echo "Starting creation of .torrent files..."
     for I in ${!conv_arr[*]}
