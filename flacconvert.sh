@@ -375,15 +375,6 @@ then
     fi
 fi
 
-	for running in ${running_arr[@]}
-	do
-		echo "... waiting for $running to be finished ..."
-        while [ -z "$(pgrep $running)" ]; do
-            sleep 1
-        done
-		echo "... $running finished ..."
-    done
-
 # check if current run level is set to only convert music files; if not, create .torrents
 if [ "$run_level" != "0" ]
 then
