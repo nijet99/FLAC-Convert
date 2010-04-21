@@ -102,8 +102,9 @@ flac_create="1"
 # Define what "type" name the .torrent file shall have
 flac_conv="FLAC"
 
-# Define what destination folder the flac .torrents shall go if individual subfolders is selected 
-flac_sub="What_FLAC"
+# Define what destination folder the flac .torrents shall go if individual subfolders is selected.
+# Trailing slash required.
+flac_sub="What_FLAC/"
 
 
 #################################################################################
@@ -411,7 +412,7 @@ then
 
     # create .torrent files for the flac files
     echo "Starting creation of .torrent files..."
-    if [ "$flac_create" = "1" ]
+    if [ "$flac_create" == "1" ]
     then
 
         echo "... for $flac_conv ..."
