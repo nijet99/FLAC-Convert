@@ -99,6 +99,9 @@ conv_create="1"
 # If you want to also create .torrent files of your flacs then set this value to 1
 flac_create="1"
 
+# If you want to extend the name of the .torrent with a "type" then set this to 1
+flac_type="1"
+
 # Define what "type" name the .torrent file shall have
 flac_conv="FLAC"
 
@@ -129,6 +132,7 @@ control_c()
 }
 trap control_c SIGINT
 
+
 function check_exit_codes
 {
     local ps=${PIPESTATUS[*]}
@@ -144,6 +148,10 @@ function check_exit_codes
         let i=$i+1
     done
 }
+
+processes_arr[1]="lame"
+processes_arr[2]="oggenc"
+processes_arr[3]="faac"
 
 function create_mp3
 {
@@ -190,6 +198,7 @@ function create_mp3
     check_exit_codes flac lame
 }
 
+
 function create_ogg
 {
     flacfile="$1"
@@ -205,6 +214,7 @@ function create_ogg
     nice oggenc $opt "$flacfile" -o "$outputfile" &>/dev/null &
     check_exit_codes oggenc
 }
+
 
 function create_aac
 {
@@ -234,6 +244,7 @@ function create_aac
         - &>/dev/null &
     check_exit_codes flac faac
 }
+
 
 function convert_flacs
 {
@@ -266,6 +277,7 @@ function convert_flacs
     fi
 }
 
+
 function create_torrents
 {
    # getting the parameters
@@ -275,14 +287,20 @@ function create_torrents
     torrentfolder_new="$4"
     conv="$5"
     conv_create="$6"
+    flac_type="$7"
 
     torrentname="${sourcefolder##*/}"
 
-    # Create .torrent file name to be used
+    # Create .torrent file name to be used. If the conversion type was added during transcoding already, don't readd it
     case "$conv_create" in
-        2) convpath=" [$conf]";;
+        1) convpath="";;
         *) convpath=" [$conv]";;
     esac
+    # Check whether type should be added to the creation FLAC .torrents
+    case "$flac_type" in
+        1) convpath=" [$conv]";;
+		*) convpath="";;
+	esac
     outputfile="$sourcefolder$convpath.torrent"
 
     # create torrent
@@ -378,9 +396,19 @@ fi
 # check if current run level is set to only convert music files; if not, create .torrents
 if [ "$run_level" != "0" ]
 then
-    # Wait for all conversions to be finsihed so that torrent creation doesn't get corrupted
-    # See: http://mywiki.wooledge.org/ProcessManagement#I_want_to_run_two_jobs_in_the_background.2C_and_then_wait_until_they_both_finish
-    wait
+
+	# make sure all conversion processes are finished
+    for check_proc in ${processes_arr[@]}
+    do
+        echo "... waiting for $check_proc to be finished ..."
+        check=`pgrep $check_proc | wc -l`
+        while [ "$check" -gt "0" ]; do
+            sleep 1
+            echo "... waiting for $check_proc to be finished ..."
+            check=`pgrep $check_proc | wc -l`
+        done
+        echo "... $test_proc finished ..."
+    done
 
     # create .torrent files
     echo "Starting creation of .torrent files..."
@@ -405,7 +433,8 @@ then
             find . -maxdepth 1 -type d | grep -v '^\.$' | while read sourcefolder
             do
                 # run create_torrents function
-                create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv" "$conv_create"
+                # Last parameter "0" is for flagging that this is not flac_create
+                create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv" "$conv_create" "0"
             done
             echo "... creation of .torrent files for $conv finished."
         else
@@ -432,7 +461,8 @@ then
             find . -maxdepth 1 -type d |grep -v '^\.$' | while read sourcefolder
             do
                 # run create_torrents function
-                create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$flac_conv"  "$conv_create"
+                # Use flac_type=1 to alaways add the $flac_conv to the torrent path
+                create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$flac_conv"  "$conv_create" "$flac_type"
             done
             echo "... creation of .torrent files for $flac_conv finished."
         else
@@ -440,5 +470,3 @@ then
         fi
     fi
 fi
-
-echo "Done!"
