@@ -103,7 +103,9 @@ flac_sub="What_FLAC"
 
 # determine maximal number of parallel jobs and add 1
 maxnum=`grep -c '^processor' /proc/cpuinfo`
-maxnum=$(($maxnum+1))
+
+# The script should work with maxnum+1 but some people have experience troubles so I just use maxnum
+#maxnum=$(($maxnum+1))
 
 # enable ctrl-c abort
 control_c()
