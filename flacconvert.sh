@@ -49,6 +49,16 @@ torrentsubfolder="0"
 # Trailing slash required.
 torrentfolder_new="torrents_new/"
 
+# Define the further files types that you also want to copy
+# All other files that are not flacs and neither one of the file types below will not get copied over
+# The file extensions are case-insensitive
+file_arr[1]="jpg"
+file_arr[2]="bmp"
+file_arr[3]="gif"
+file_arr[4]="png"
+file_arr[5]="cue"
+file_arr[6]="log"
+
 # Define the conversion "type". This is a reference for the other arrays and only those types will be converted to that are enabled here.
 # Also make sure that the array index number matches the one of the following arrays.
 conv_arr[1]="320"
@@ -338,18 +348,21 @@ then
                 mkdir -p "$basefolder$dest$folder"
             done
             # copy desired non-flac files
-            find . \( -iname '*.cue' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' \) | while read file_org
+            for fileext in ${file_arr[@]}
             do
-                # change destination path
-                file=$file_org
-                file="${file#*/}"
-                file_substring=${file%%/*}
-                replacement="./$file_substring$convpath"
-                file=${file/#$file_substring/$replacement}
-                cp -u "$file_org" "$basefolder$dest$file"
+                echo "... copying $fileext files..."
+                nice find . -iname "*.$fileext" | while read extfile
+                do
+                    # change destination path
+                    file=$extfile
+                    file="${file#*/}"
+                    file_substring=${file%%/*}
+                    replacement="./$file_substring$convpath"
+                    file=${file/#$file_substring/$replacement}
+                    cp -a -u "$extfile" "$basefolder$dest$file"
+                done
             done
-            # find all flac files and pass them on to the actual convert script
-            find . -iname '*.flac' | while read flacfile
+            nice find . -iname '*.flac' | while read flacfile
             do
                 # run convert_flacs function
                 convert_flacs "$flacfile" "$basefolder" "$ext" "$opt" "$convpath"
