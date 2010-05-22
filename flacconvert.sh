@@ -219,9 +219,19 @@ function create_aac
 
     TITLE="`metaflac --show-tag=TITLE "$flacfile" | awk -F = '{ printf($2) }'`"
     ARTIST="`metaflac --show-tag=ARTIST "$flacfile" | awk -F = '{ printf($2) }'`"
-    DATE="`metaflac --show-tag=DATE "$flacfile" | awk -F = '{ printf($2) }'`"
     ALBUM="`metaflac --show-tag=ALBUM "$flacfile" | awk -F = '{ printf($2) }'`"
+    DISCNUMBER="`metaflac --show-tag=DISCNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
+    DATE="`metaflac --show-tag=DATE "$flacfile" | awk -F = '{ printf($2) }'`"
     TRACKNUMBER="`metaflac --show-tag=TRACKNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
+    TRACKTOTAL="`metaflac --show-tag=TRACKTOTAL "$flacfile" | awk -F = '{ printf($2) }'`"
+    GENRE="`metaflac --show-tag=GENRE "$flacfile" | awk -F = '{ printf($2) }'`"
+    DESCRIPTION="`metaflac --show-tag=DESCRIPTION "$flacfile" | awk -F = '{ printf($2) }'`"
+    COMMENT="`metaflac --show-tag=COMMENT "$flacfile" | awk -F = '{ printf($2) }'`"
+    COMPOSER="`metaflac --show-tag=COMPOSER "$flacfile" | awk -F = '{ printf($2) }'`"
+    PERFORMER="`metaflac --show-tag=PERFORMER "$flacfile" | awk -F = '{ printf($2) }'`"
+    COPYRIGHT="`metaflac --show-tag=COPYRIGHT "$flacfile" | awk -F = '{ printf($2) }'`"
+    LICENCE="`metaflac --show-tag=LICENCE "$flacfile" | awk -F = '{ printf($2) }'`"
+    ENCODEDBY="`metaflac --show-tag=ENCODED-BY "$flacfile" | awk -F = '{ printf($2) }'`"
 
     # sleep while max number of jobs are running
     until ((`jobs | wc -l` < maxnum)); do
@@ -230,11 +240,15 @@ function create_aac
 
     echo "Encoding `basename "$flacfile"` to $outputfile"
     nice flac -dcs "$flacfile" | faac $opt \
-        --title "$TITLE" \
-        --track "$TRACKNUMBER" \
         --artist "$ARTIST" \
-        --year "$DATE" \
+        --writer "$COMPOSER" \
+        --title "$TITLE" \
+        --genre "$GENRE" \
         --album "$ALBUM" \
+        --track "$TRACKNUMBER/$TRACKTOTAL" \
+        --disc "$DISCNUMBER" \
+        --year "$DATE" \
+        --comment "$COMMENT" \
         -o "$outputfile" \
         - &>/dev/null &
     check_exit_codes flac faac
