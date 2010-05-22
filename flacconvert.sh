@@ -47,17 +47,12 @@ torrentsubfolder="0"
 
 # Define a different folder for newly created torrents to be stored so that existing .torrent files won't be overwritten.
 # Trailing slash required.
-torrentfolder_new="torrents_new/"
+torrentfolder_new=$basefolder"torrents_new/"
 
 # Define the further files types that you also want to copy
 # All other files that are not flacs and neither one of the file types below will not get copied over
 # The file extensions are case-insensitive
-file_arr[1]="jpg"
-file_arr[2]="bmp"
-file_arr[3]="gif"
-file_arr[4]="png"
-file_arr[5]="cue"
-file_arr[6]="log"
+copy_exts=( jpg bmp gif jpeg png cue log )
 
 # Define the conversion "type". This is a reference for the other arrays and only those types will be converted to that are enabled here.
 # Also make sure that the array index number matches the one of the following arrays.
@@ -367,7 +362,7 @@ then
                 mkdir -p "$basefolder$dest$folder"
             done
             # copy desired non-flac files
-            for fileext in ${file_arr[@]}
+            for fileext in ${copy_exts[@]}
             do
                 echo "... copying $fileext files..."
                 nice find . -iname "*.$fileext" | while read extfile
