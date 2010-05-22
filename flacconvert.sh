@@ -81,7 +81,7 @@ opt_arr[1]="-b 320 --replaygain-accurate --id3v2-only"
 opt_arr[2]="--vbr-new -V 0 --replaygain-accurate --id3v2-only"
 opt_arr[3]="--vbr-new -V 2 --replaygain-accurate --id3v2-only"
 opt_arr[4]="-q 8"
-opt_arr[5]="-PRBCw -c 22050 -b 320" # For transcoding vinly those options are recommended: -RCws -c 44000 -b 320
+opt_arr[5]="-PRBCw -c 22050 -b 320" # For transcoding vinly those options are recommended: -RCws -c 48000 -b 320
 
 # Add conversion type name to the transcoded folders? Set "0" to NOT add and set "1" to add the conversion name.
 conv_create="1"
