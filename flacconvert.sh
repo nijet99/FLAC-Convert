@@ -40,6 +40,7 @@ flacfolder=$basefolder"FLAC/"
 
 # Define the folder where the .torrent files shall be stored.
 # Trailing slash required.
+# DO NOT PUT THIS INSIDE THE INPUT FOLDER
 torrentfolder=$basefolder"torrents/"
 
 # If you want to have subfolders according to each conversion type (see below) set this value to 1
