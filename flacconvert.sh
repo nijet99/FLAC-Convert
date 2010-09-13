@@ -105,6 +105,10 @@ flac_conv="FLAC"
 # Trailing slash required.
 flac_sub="What_FLAC/"
 
+# If the script just sort of stops after first conversion or none at all, you may have to few cores so that they are always in use.
+# Hence the script can't find free cores to work on. If that happens, set the option below to "1" (or more). This will enable to run more threads
+# than cores on the system and hence keep transcoding and creating torrent files.
+coreaddition="0" 
 
 #################################################################################
 #                             DEFINE USER FUNCTIONS                             #
@@ -113,9 +117,8 @@ flac_sub="What_FLAC/"
 
 # determine maximal number of parallel jobs and add 1
 maxnum=`grep -c '^processor' /proc/cpuinfo`
+maxnum=$(($maxnum+$coreaddition))
 
-# The script should work with maxnum+1 but some people have experience troubles so I just use maxnum
-#maxnum=$(($maxnum+1))
 
 # enable ctrl-c abort
 control_c()
