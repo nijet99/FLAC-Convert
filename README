@@ -26,6 +26,7 @@ Requirements:
  - mktorrent (for torrent file creation)
  - vorbis-tools (for ogg encoding)
  - faac (for AAC encoding)
+ - Nero AAC Encoder if you want to use that one instead of faac / visit: http://www.nero.com/eng/downloads-nerodigital-nero-aac-codec.php
 
 more file formats can easily be added.
 

@@ -61,7 +61,8 @@ conv_arr[1]="320"
 conv_arr[2]="V0"
 conv_arr[3]="V2"
 conv_arr[4]="OGG"
-conv_arr[5]="AAC"
+conv_arr[5]="AAC"	# normal faac encoder / recommended to only use faac or only nero aac
+#conv_arr[6]="nAAC"	# nero aac encoder / recommended to only use faac or only nero aac
 
 # Define the destination folder for each type. Trailing slash required.
 dest_arr[1]="What_320/"
@@ -69,6 +70,7 @@ dest_arr[2]="What_V0/"
 dest_arr[3]="What_V2/"
 dest_arr[4]="What_OGG/"
 dest_arr[5]="What_AAC/"
+dest_arr[6]="What_nAAC/"
 
 # Define the file extension for each type
 ext_arr[1]="mp3"
@@ -76,6 +78,7 @@ ext_arr[2]="mp3"
 ext_arr[3]="mp3"
 ext_arr[4]="ogg"
 ext_arr[5]="m4a"
+ext_arr[6]="m4aNero"	# Although the "nero" is there, it will get ignored by the script - this is just to differentiate between the faac and nero encoder
 
 # Define the conversion options for each type
 opt_arr[1]="-b 320 --replaygain-accurate --id3v2-only"
@@ -83,6 +86,7 @@ opt_arr[2]="--vbr-new -V 0 --replaygain-accurate --id3v2-only"
 opt_arr[3]="--vbr-new -V 2 --replaygain-accurate --id3v2-only"
 opt_arr[4]="-q 8"
 opt_arr[5]="-PRBCw -c 22050 -b 320" # For transcoding vinly those options are recommended: -RCws -c 48000 -b 320
+opt_arr[6]="-br 320000"
 
 # Add conversion type name to the transcoded folders? Set "0" to NOT add and set "1" to add the conversion name.
 conv_create="1"
@@ -151,6 +155,7 @@ function check_exit_codes
 processes_arr[1]="lame"
 processes_arr[2]="oggenc"
 processes_arr[3]="faac"
+processes_arr[4]="neroAacEnc"
 
 function create_mp3
 {
@@ -259,6 +264,51 @@ function create_aac
 }
 
 
+function create_naac
+{
+    flacfile="$1"
+    opt="$2"
+    outputfile="$3"
+ 
+    TITLE="`metaflac --show-tag=TITLE "$flacfile" | awk -F = '{ printf($2) }'`"
+    ARTIST="`metaflac --show-tag=ARTIST "$flacfile" | awk -F = '{ printf($2) }'`"
+    ALBUM="`metaflac --show-tag=ALBUM "$flacfile" | awk -F = '{ printf($2) }'`"
+    DISCNUMBER="`metaflac --show-tag=DISCNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
+    DATE="`metaflac --show-tag=DATE "$flacfile" | awk -F = '{ printf($2) }'`"
+    TRACKNUMBER="`metaflac --show-tag=TRACKNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
+    TRACKTOTAL="`metaflac --show-tag=TRACKTOTAL "$flacfile" | awk -F = '{ printf($2) }'`"
+    GENRE="`metaflac --show-tag=GENRE "$flacfile" | awk -F = '{ printf($2) }'`"
+    DESCRIPTION="`metaflac --show-tag=DESCRIPTION "$flacfile" | awk -F = '{ printf($2) }'`"
+    COMMENT="`metaflac --show-tag=COMMENT "$flacfile" | awk -F = '{ printf($2) }'`"
+    COMPOSER="`metaflac --show-tag=COMPOSER "$flacfile" | awk -F = '{ printf($2) }'`"
+    PERFORMER="`metaflac --show-tag=PERFORMER "$flacfile" | awk -F = '{ printf($2) }'`"
+    COPYRIGHT="`metaflac --show-tag=COPYRIGHT "$flacfile" | awk -F = '{ printf($2) }'`"
+    LICENCE="`metaflac --show-tag=LICENCE "$flacfile" | awk -F = '{ printf($2) }'`"
+    ENCODEDBY="`metaflac --show-tag=ENCODED-BY "$flacfile" | awk -F = '{ printf($2) }'`"
+
+    # sleep while max number of jobs are running
+    until ((`jobs | wc -l` < maxnum)); do
+        sleep 1
+    done
+
+    echo "Encoding `basename "$flacfile"` to $outputfile"
+    nice flac -dcs "$flacfile" | neroAacEnc $opt -if - -of "$outputfile" &>/dev/null &&
+    neroAacTag "$outputfile" \
+        -meta:artist="$ARTIST" \
+        -meta:composer="$COMPOSER" \
+        -meta:title="$TITLE" \
+        -meta:genre="$GENRE" \
+        -meta:album="$ALBUM" \
+        -meta:track="$TRACKNUMBER" \
+        -meta:totaltracks="$TRACKTOTAL" \
+        -meta:disc="$DISCNUMBER" \
+        -meta:year="$DATE" \
+        -meta:comment="$COMMENT" \
+        &>/dev/null &
+    check_exit_codes flac neroAacEnc neroAacTag
+}
+
+
 function convert_flacs
 {
     # getting the parameters
@@ -273,6 +323,12 @@ function convert_flacs
     file_substring=${file%%/*}
     replacement="./$file_substring$convpath"
     file=${file/#$file_substring/$replacement}
+    if [ "$ext" = "m4aNero" ]; then
+        outputfile="$basefolder$dest${file%*.*}.m4a"
+    else
+        outputfile="$basefolder$dest${file%*.*}.$ext"
+    fi
+
     outputfile="$basefolder$dest${file%*.*}.$ext"
 
     # check if the encoded file is older than the original flac file; if so, encode it!
@@ -282,6 +338,7 @@ function convert_flacs
             mp3) create_mp3 "$flacfile" "$opt" "$outputfile";;
             ogg) create_ogg "$flacfile" "$opt" "$outputfile";;
             m4a) create_aac "$flacfile" "$opt" "$outputfile";;
+            m4aNero) create_naac "$flacfile" "$opt" "$outputfile";;
         esac
         # find album path in order to touch the album dir to change last modified date
         album_tmp=$(dirname "$outputfile")
