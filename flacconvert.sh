@@ -322,7 +322,7 @@ function convert_flacs
     file="${flacfile#*/}"
     file_substring=${file%%/*}
     replacement="./$file_substring$convpath"
-    file=${file/#$file_substring/$replacement}
+    file=${file/#"$file_substring"/"$replacement"}
     if [ "$ext" = "m4aNero" ]; then
         outputfile="$basefolder$dest${file%*.*}.m4a"
     else
@@ -433,7 +433,7 @@ then
                 folder="${folder#*/}"
                 folder_substring=${folder%%/*}
                 replacement="./$folder_substring$convpath"
-                folder=${folder/#$folder_substring/$replacement}
+                folder=${folder/#"$folder_substring"/"$replacement"}
                 mkdir -p "$basefolder$dest$folder"
             done
             # copy desired non-flac files
@@ -447,7 +447,7 @@ then
                     file="${file#*/}"
                     file_substring=${file%%/*}
                     replacement="./$file_substring$convpath"
-                    file=${file/#$file_substring/$replacement}
+                    file=${file/#"$file_substring"/"$replacement"}
                     cp -a -u "$extfile" "$basefolder$dest$file"
                 done
             done
