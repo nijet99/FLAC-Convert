@@ -329,8 +329,6 @@ function convert_flacs
         outputfile="$basefolder$dest${file%*.*}.$ext"
     fi
 
-    outputfile="$basefolder$dest${file%*.*}.$ext"
-
     # check if the encoded file is older than the original flac file; if so, encode it!
     if [ "$flacfile" -nt "$outputfile" ]
     then
