@@ -20,108 +20,65 @@
 #################################################################################
 
 
-#################################################################################
-#                              DEFINE VARIABLES                                 #
-#################################################################################
+function usage
+{
+    echo "Usage: $0 [profile.prof]"
+}
 
-# Define the run level: 0 = transcode only; 1 = create .torrent files only; 2 = transcode and create .torrent files
-run_level="2"
 
-# Define announce url
-announce_url="http://tracker.domain.com/announce"
+# source profile if specified, or default.prof
+function source_profile
+{
+    if [ $# = 0 ]
+    then
+        profile="default.prof"
+    elif [ $# = 1 ]
+    then
+        profile="$1"
+    else
+        usage
+        return 1
+    fi
 
-# Define the base folder from where everything else is relativ.
-# If you have no common basefolder leave this empty. Trailing slash required.
-basefolder="/home/${USER}/test/"
+    # if no slash, then path is relative
+    if [ $(expr index / "$profile") = 0 ]
+    then
+        relative=1
+    else
+        relative=0
+    fi
 
-# Define the folder where the flac albums can be found.
-# Trailing slash required.
-flacfolder=$basefolder"FLAC/"
+    # try to find profile in the script directory
+    if [ ! -f "$profile" ]
+    then
+        if [ $relative = 1 ]
+        then
+            profile2="$(dirname "$0")/$profile"
+            if [ -f "$profile2" ]
+            then
+                profile="$profile2"
+                relative=0
+            else
+                echo "Neither $(pwd)/$profile, nor $profile2 exists"
+                return 1
+            fi
+        else
+            echo "File $profile doesn't exist"
+            return 1
+        fi
+    fi
 
-# Define the folder where the .torrent files shall be stored.
-# Trailing slash required.
-# DO NOT PUT THIS INSIDE THE INPUT FOLDER
-torrentfolder=$basefolder"torrents/"
+    # this should prevent bash searching profile in PATH
+    if [ $relative = 1 ]
+    then
+        profile="$(pwd)/$profile"
+        relative=0
+    fi
 
-# If you want to have subfolders according to each conversion type (see below) set this value to 1
-torrentsubfolder="0"
+    echo "Using $profile"
 
-# Define a different folder for newly created torrents to be stored so that existing .torrent files won't be overwritten.
-# Trailing slash required.
-torrentfolder_new=$basefolder"torrents_new/"
-
-# Define the further files types that you also want to copy
-# All other files that are not flacs and neither one of the file types below will not get copied over
-# The file extensions are case-insensitive
-copy_exts=( jpg bmp gif jpeg png cue log )
-
-# Define the conversion "type". This is a reference for the other arrays and only those types will be converted to that are enabled here.
-# Also make sure that the array index number matches the one of the following arrays.
-conv_arr[1]="320"
-conv_arr[2]="V0"
-conv_arr[3]="V2"
-conv_arr[4]="OGG"
-conv_arr[5]="AAC"	# normal faac encoder / recommended to only use faac or only nero aac
-#conv_arr[6]="nAAC"	# nero aac encoder / recommended to only use faac or only nero aac
-
-# Define the destination folder for each type. Trailing slash required.
-dest_arr[1]="What_320/"
-dest_arr[2]="What_V0/"
-dest_arr[3]="What_V2/"
-dest_arr[4]="What_OGG/"
-dest_arr[5]="What_AAC/"
-dest_arr[6]="What_nAAC/"
-
-# Define the file extension for each type
-ext_arr[1]="mp3"
-ext_arr[2]="mp3"
-ext_arr[3]="mp3"
-ext_arr[4]="ogg"
-ext_arr[5]="m4a"
-ext_arr[6]="m4aNero"	# Although the "nero" is there, it will get ignored by the script - this is just to differentiate between the faac and nero encoder
-
-# Define the conversion options for each type
-opt_arr[1]="-b 320 --replaygain-accurate --id3v2-only"
-opt_arr[2]="--vbr-new -V 0 --replaygain-accurate --id3v2-only"
-opt_arr[3]="--vbr-new -V 2 --replaygain-accurate --id3v2-only"
-opt_arr[4]="-q 8"
-opt_arr[5]="-RCws -c 44100 -b 320" # For transcoding vinly those options are recommended: -RCws -c 48000 -b 320
-opt_arr[6]="-br 320000"
-
-# Add conversion type name to the transcoded folders? Set "0" to NOT add and set "1" to add the conversion name.
-conv_create="1"
-
-# There is currently a bug with mktorrent with the -n option. Basically -n should only change the name being displayed in the torrent client.
-# However if -n is used to alter the name it also alters the path. When you want to have displayes "torrent name [FLAC]" or anything else,
-# Then you'll also have to rename the folder / file to that. I have contacted the author of mktorrent here: http://github.com/esmil/mktorrent/issues#issue/2
-# If you still want to have a [FLAC] added to the torrent naming, then alter line 310 and change 2) to 1)
-
-# If you want to also create .torrent files of your flacs then set this value to 1
-flac_create="1"
-
-# If you want to extend the name of the .torrent with a "type" then set this to 1
-flac_type="0"
-
-# Define what "type" name the .torrent file shall have
-flac_conv="FLAC"
-
-# Define what destination folder the flac .torrents shall go if individual subfolders is selected.
-# Trailing slash required.
-flac_sub="What_FLAC/"
-
-# If the script just sort of stops after first conversion or none at all, you may have to few cores so that they are always in use.
-# Hence the script can't find free cores to work on. If that happens, set the option below to "1" (or more). This will enable to run more threads
-# than cores on the system and hence keep transcoding and creating torrent files.
-coreaddition="0" 
-
-#################################################################################
-#                             DEFINE USER FUNCTIONS                             #
-#                               do not edit below                               #
-#################################################################################
-
-# determine maximal number of parallel jobs and add 1
-maxnum=`grep -c '^processor' /proc/cpuinfo`
-maxnum=$(($maxnum+$coreaddition))
+    source "$profile"
+}
 
 
 # enable ctrl-c abort
@@ -401,7 +358,15 @@ function create_torrents
 #                               do not edit below                               #
 #################################################################################
 
+
+source_profile "$@"
+[ $? -eq 0 ] || exit $?
+
 echo "Starting the flacconvert script."
+
+# determine maximal number of parallel jobs and add 1
+maxnum=`grep -c '^processor' /proc/cpuinfo`
+maxnum=$(($maxnum+$coreaddition))
 
 # convert flacs
 # check if current run level is set to create only .torrent files; if not, do conversion
