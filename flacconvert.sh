@@ -399,21 +399,25 @@ then
                 folder=${folder/#"$folder_substring"/"$replacement"}
                 mkdir -p "$basefolder$dest$folder"
             done
+
             # copy desired non-flac files
             for fileext in ${copy_exts[@]}
             do
-                echo "... copying $fileext files..."
-                nice find . -iname "*.$fileext" | while read extfile
-                do
-                    # change destination path
-                    file=$extfile
-                    file="${file#*/}"
-                    file_substring=${file%%/*}
-                    replacement="./$file_substring$convpath"
-                    file=${file/#"$file_substring"/"$replacement"}
-                    cp -a -u "$extfile" "$basefolder$dest$file"
-                done
+                expr="$expr -o -iname \"*.$fileext\""
             done
+            expr=${expr# -o }
+            echo "... copying files..."
+            eval "nice find . $expr" | while read extfile
+            do
+                # change destination path
+                file=$extfile
+                file="${file#*/}"
+                file_substring=${file%%/*}
+                replacement="./$file_substring$convpath"
+                file=${file/#"$file_substring"/"$replacement"}
+                cp -a -u "$extfile" "$basefolder$dest$file"
+            done
+
             nice find . -iname '*.flac' | while read flacfile
             do
                 # run convert_flacs function
