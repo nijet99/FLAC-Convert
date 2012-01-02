@@ -266,6 +266,21 @@ function create_naac
 }
 
 
+# add to the first folder of the path $convpath suffix
+function convert_path
+{
+    local file="$1"
+    local convpath="$2"
+
+    file="${file#*/}"
+    file_substring=${file%%/*}
+    local replacement="./$file_substring$convpath"
+    file=${file/#"$file_substring"/"$replacement"}
+
+    echo "$file"
+}
+
+
 function convert_flacs
 {
     # getting the parameters
@@ -276,10 +291,7 @@ function convert_flacs
     convpath="$5"
 
     # set right filename for transcoded file
-    file="${flacfile#*/}"
-    file_substring=${file%%/*}
-    replacement="./$file_substring$convpath"
-    file=${file/#"$file_substring"/"$replacement"}
+    file="$(convert_path "$flacfile" "$convpath")"
     if [ "$ext" = "m4aNero" ]; then
         outputfile="$basefolder$dest${file%*.*}.m4a"
     else
@@ -392,11 +404,7 @@ then
             # create folder structure
             find -type d | grep -v '^\.$' | while read folder
             do
-                # change destination path
-                folder="${folder#*/}"
-                folder_substring=${folder%%/*}
-                replacement="./$folder_substring$convpath"
-                folder=${folder/#"$folder_substring"/"$replacement"}
+                folder="$(convert_path "$folder" "$convpath")"
                 mkdir -p "$basefolder$dest$folder"
             done
 
@@ -409,12 +417,7 @@ then
             echo "... copying files..."
             eval "nice find . $expr" | while read extfile
             do
-                # change destination path
-                file=$extfile
-                file="${file#*/}"
-                file_substring=${file%%/*}
-                replacement="./$file_substring$convpath"
-                file=${file/#"$file_substring"/"$replacement"}
+                file="$(convert_path "$extfile" "$convpath")"
                 cp -a -u "$extfile" "$basefolder$dest$file"
             done
 
