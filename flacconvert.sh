@@ -266,15 +266,16 @@ function create_naac
 }
 
 
-# add to the first folder of the path $convpath suffix
 function convert_path
 {
-    local file="$1"
-    local convpath="$2"
+    local base="$1"             # with trailing slash
+    local dest="$2"             # with trailing slash
+    local file="$3"             # full path which must start with $base
+    local convpath="$4"         # suffix
 
-    file="${file#*/}"
+    file="${file#$base}"
     file_substring=${file%%/*}
-    local replacement="./$file_substring$convpath"
+    local replacement="$dest$file_substring$convpath"
     file=${file/#"$file_substring"/"$replacement"}
 
     echo "$file"
@@ -285,18 +286,11 @@ function convert_flacs
 {
     # getting the parameters
     flacfile="$1"
-    basefolder="$2"
-    ext="$3"
-    opt="$4"
-    convpath="$5"
+    outputfile="$2"
+    opt="$3"
 
-    # set right filename for transcoded file
-    file="$(convert_path "$flacfile" "$convpath")"
-    if [ "$ext" = "m4aNero" ]; then
-        outputfile="$basefolder$dest${file%*.*}.m4a"
-    else
-        outputfile="$basefolder$dest${file%*.*}.$ext"
-    fi
+    ext="${outputfile##*.}"
+    outputfile="$(sed "s/\.m4aNero$/.m4a/" <<< "$outputfile")"
 
     # check if the encoded file is older than the original flac file; if so, encode it!
     if [ "$flacfile" -nt "$outputfile" ]
@@ -364,6 +358,23 @@ function create_torrents
 }
 
 
+# list all files with specified extensions in the specified directory
+function find_exts
+{
+    local path="$1"
+    shift
+    local exts=$@
+    [ $# -eq 0 ] && return 0
+
+    for fileext in ${exts[@]}
+    do
+        expr="$expr -o -iname \"*.$fileext\""
+    done
+    expr=${expr# -o }
+    eval "nice find $path -type f $expr"
+}
+
+
 
 #################################################################################
 #                                 SCRIPT CONTROL                                #
@@ -398,33 +409,49 @@ then
                 1) convpath=" [$conv]";;
                 *) convpath="";;
             esac
+            destfolder="$basefolder$dest"
 
             cd "$flacfolder"
-            dest="${dest_arr[$I]}"
             # create folder structure
-            find -type d | grep -v '^\.$' | while read folder
+            find "$flacfolder" -type d | grep -v '^\.$' | while read folder
             do
-                folder="$(convert_path "$folder" "$convpath")"
-                mkdir -p "$basefolder$dest$folder"
+                folder="$(convert_path "$flacfolder" "$destfolder" \
+                                       "$folder" "$convpath")"
+                mkdir -p "$folder"
             done
 
-            # copy desired non-flac files
-            for fileext in ${copy_exts[@]}
-            do
-                expr="$expr -o -iname \"*.$fileext\""
-            done
-            expr=${expr# -o }
             echo "... copying files..."
-            eval "nice find . $expr" | while read extfile
+            find_exts "$flacfolder" ${copy_exts[@]} | while read extfile
             do
-                file="$(convert_path "$extfile" "$convpath")"
-                cp -a -u "$extfile" "$basefolder$dest$file"
+                file="$(convert_path "$flacfolder" "$destfolder" \
+                                     "$extfile" "$convpath")"
+                cp -a -u "$extfile" "$file"
             done
 
-            nice find . -iname '*.flac' | while read flacfile
+            echo "... hard linking files..."
+            find_exts "$flacfolder" ${hard_link_exts[@]} | while read extfile
             do
+                file="$(convert_path "$flacfolder" "$destfolder" \
+                                     "$extfile" "$convpath")"
+                [ -e "$file" ] || ln "$extfile" "$file"
+            done
+
+            echo "... soft linking files..."
+            find_exts "$flacfolder" ${soft_link_exts[@]} | while read extfile
+            do
+                file="$(convert_path "$flacfolder" "$destfolder" \
+                                     "$extfile" "$convpath")"
+                [ -e "$file" ] || ln -s "$extfile" "$file"
+            done
+
+            echo "... converting flac files..."
+            nice find "$flacfolder" -iname '*.flac' | while read flacfile
+            do
+                outputfile="$(convert_path "$flacfolder" "$destfolder" \
+                                           "$flacfile" "$convpath")"
+                outputfile="${outputfile%.*}.$ext"
                 # run convert_flacs function
-                convert_flacs "$flacfile" "$basefolder" "$ext" "$opt" "$convpath"
+                convert_flacs "$flacfile" "$outputfile" "$opt"
             done
         done
         echo "... conversion of flac files finished."
