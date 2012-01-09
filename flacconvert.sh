@@ -270,14 +270,24 @@ function convert_path
 {
     local base="$1"             # with trailing slash
     local dest="$2"             # with trailing slash
-    local file="$3"             # full path which must start with $base
+    local file="$3"             # full path
     local convpath="$4"         # suffix
+    local backwards="$5"        # whether file is a destination file,
+                                # if so, convert it to the source file
 
-    file="${file#$base}"
-    file_substring=${file%%/*}
-    local replacement="$dest$file_substring$convpath"
-    file=${file/#"$file_substring"/"$replacement"}
-
+    if [ ! "$backwards" = "1" ]
+    then
+        file=${file#"$base"}
+        file_substring=${file%%/*}
+        local replacement=$dest$file_substring$convpath
+        file=${file/#"$file_substring"/"$replacement"}
+    else
+        file=${file#"$dest"}
+        file_substring=${file%%/*}
+        local replacement=$base$file_substring
+        replacement=${replacement%"$convpath"}
+        file=${file/#"$file_substring"/"$replacement"}
+    fi
     echo "$file"
 }
 
@@ -374,6 +384,54 @@ function find_exts
     eval "nice find $path -type f $expr"
 }
 
+# remove destination files and folders if corresponding files in flac folder
+# don't exist anymore
+function remove_obsolete_files
+{
+    local dest="$1"             # destination folder with trailing slash
+    local src="$2"              # flac folder with trailing slash
+    local convpath="$3"         # suffix
+    local ext="$4"              # which extension have trancscoded files
+
+    ext="$(sed "s/^m4aNero$/m4a/" <<< "$ext")"
+
+    # remove folders
+    find "$dest" -type d | while read folder
+    do
+        if [ -d "$folder" ]     # skip already removed folders
+        then
+            srcfolder=$(convert_path "$src" "$dest" "$folder" "$convpath" 1)
+            if [ ! -d "$srcfolder" ]
+            then
+                rm -Rf "$folder"
+            fi
+        fi
+    done
+
+    # remove copied and linked files
+    find_exts "$dest" ${copy_exts[@]} ${hard_link_exts[@]} \
+        ${soft_link_exts[@]} | while read destfile
+    do
+        srcfile=$(convert_path "$src" "$dest" "$destfile" "$convpath" 1)
+        if [ ! -e "$srcfile" ]
+        then
+            rm -f "$destfile"
+        fi    
+    done
+
+    # remove transcoded files
+    find "$dest" -type f -iname "*.$ext" | while read destfile
+    do
+        file=$(convert_path "$src" "$dest" "$destfile" "$convpath" 1)
+        srcfile=${file%.*}.flac
+        srcfile2=${file%.*}.FLAC
+        if [ ! -e "$srcfile" -a ! -e "$srcfile2" ]
+        then
+            rm -f "$destfile"
+        fi
+    done
+}
+
 
 
 #################################################################################
@@ -411,6 +469,13 @@ then
             esac
             destfolder="$basefolder$dest"
 
+            echo "... removing obsolete files..."
+            if [ "$mirror" = "1" ]
+            then
+                remove_obsolete_files "$destfolder" "$flacfolder" \
+                                         "$convpath" "$ext"
+            fi
+            
             cd "$flacfolder"
             # create folder structure
             find "$flacfolder" -type d | grep -v '^\.$' | while read folder
