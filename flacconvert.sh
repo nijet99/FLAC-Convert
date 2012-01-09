@@ -476,9 +476,8 @@ then
                                          "$convpath" "$ext"
             fi
             
-            cd "$flacfolder"
             # create folder structure
-            find "$flacfolder" -type d | grep -v '^\.$' | while read folder
+            find "$flacfolder" -type d | tail -n +2 | while read folder
             do
                 folder="$(convert_path "$flacfolder" "$destfolder" \
                                        "$folder" "$convpath")"
