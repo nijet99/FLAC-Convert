@@ -470,25 +470,18 @@ then
             destfolder="$basefolder$dest"
 
             echo "... removing obsolete files..."
-            if [ "$mirror" = "1" ]
+            if [ "$mirror" = "1" -a -d "$destfolder" ]
             then
                 remove_obsolete_files "$destfolder" "$flacfolder" \
                                          "$convpath" "$ext"
             fi
-            
-            # create folder structure
-            find "$flacfolder" -type d | tail -n +2 | while read folder
-            do
-                folder="$(convert_path "$flacfolder" "$destfolder" \
-                                       "$folder" "$convpath")"
-                mkdir -p "$folder"
-            done
 
             echo "... copying files..."
             find_exts "$flacfolder" ${copy_exts[@]} | while read extfile
             do
                 file="$(convert_path "$flacfolder" "$destfolder" \
                                      "$extfile" "$convpath")"
+                mkdir -p "$(dirname "$file")"
                 cp -a -u "$extfile" "$file"
             done
 
@@ -497,6 +490,7 @@ then
             do
                 file="$(convert_path "$flacfolder" "$destfolder" \
                                      "$extfile" "$convpath")"
+                mkdir -p "$(dirname "$file")"
                 [ -e "$file" ] || ln "$extfile" "$file"
             done
 
@@ -505,6 +499,7 @@ then
             do
                 file="$(convert_path "$flacfolder" "$destfolder" \
                                      "$extfile" "$convpath")"
+                mkdir -p "$(dirname "$file")"
                 [ -e "$file" ] || ln -s "$extfile" "$file"
             done
 
@@ -513,6 +508,7 @@ then
             do
                 outputfile="$(convert_path "$flacfolder" "$destfolder" \
                                            "$flacfile" "$convpath")"
+                mkdir -p "$(dirname "$outputfile")"
                 outputfile="${outputfile%.*}.$ext"
                 # run convert_flacs function
                 convert_flacs "$flacfile" "$outputfile" "$opt"
