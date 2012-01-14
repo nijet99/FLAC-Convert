@@ -275,19 +275,30 @@ function convert_path
     local backwards="$5"        # whether file is a destination file,
                                 # if so, convert it to the source file
 
-    if [ ! "$backwards" = "1" ]
+    if [ "$backwards" = "1" ]
     then
-        file=${file#"$base"}
-        file_substring=${file%%/*}
-        local replacement=$dest$file_substring$convpath
-        file=${file/#"$file_substring"/"$replacement"}
-    else
-        file=${file#"$dest"}
-        file_substring=${file%%/*}
-        local replacement=$base$file_substring
-        replacement=${replacement%"$convpath"}
-        file=${file/#"$file_substring"/"$replacement"}
+        local tmp=$base
+        base=$dest
+        dest=$tmp
     fi
+
+    # files right under dest shall not have convpath
+    if [ -f "$file" -a "${file%/*}/" = "$base" ]
+    then
+        convpath=
+    fi
+
+    file=${file#"$base"}
+    file_substring=${file%%/*}
+    local replacement=$dest$file_substring
+    if [ "$backwards" = "1" ]
+    then
+        replacement=${replacement%"$convpath"}
+    else
+        replacement=$replacement$convpath
+    fi
+    file=${file/#"$file_substring"/"$replacement"}
+
     echo "$file"
 }
 
