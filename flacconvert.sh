@@ -410,7 +410,7 @@ function remove_obsolete_files
 
     # remove copied and linked files
     find_exts "$dest" ${copy_exts[@]} ${hard_link_exts[@]} \
-        ${soft_link_exts[@]} | while read destfile
+        ${sym_link_exts[@]} | while read destfile
     do
         srcfile=$(convert_path "$src" "$dest" "$destfile" "$convpath" 1)
         if [ ! -e "$srcfile" ]
@@ -494,8 +494,8 @@ then
                 [ -e "$file" ] || ln "$extfile" "$file"
             done
 
-            echo "... soft linking files..."
-            find_exts "$flacfolder" ${soft_link_exts[@]} | while read extfile
+            echo "... symbolic linking files..."
+            find_exts "$flacfolder" ${sym_link_exts[@]} | while read extfile
             do
                 file="$(convert_path "$flacfolder" "$destfolder" \
                                      "$extfile" "$convpath")"

@@ -31,10 +31,10 @@ copy_exts=( jpg bmp gif jpeg png cue log )
 
 hard_link_exts=( )
 
-soft_link_exts=( )
+sym_link_exts=( )
 
 # Remove transcoded, copied, or linked files and folders if corresponding files in flacfolder don't exist anymore. Set to 1 to activate.
-# CAUTION: THESE MAY CAUSE DATA LOSS
+# CAUTION: THIS MAY CAUSE DATA LOSS
 mirror="0"
 
 # Define the conversion "type". This is a reference for the other arrays and only those types will be converted to that are enabled here.
