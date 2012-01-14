@@ -402,7 +402,7 @@ function remove_obsolete_files
     local dest="$1"             # destination folder with trailing slash
     local src="$2"              # flac folder with trailing slash
     local convpath="$3"         # suffix
-    local ext="$4"              # which extension have trancscoded files
+    local ext="$4"              # extension of trancscoded files
 
     ext="$(sed "s/^m4aNero$/m4a/" <<< "$ext")"
 
@@ -419,26 +419,24 @@ function remove_obsolete_files
         fi
     done
 
-    # remove copied and linked files
+    # remove copied, linked and transcoded files
     find_exts "$dest" ${copy_exts[@]} ${hard_link_exts[@]} \
-        ${sym_link_exts[@]} | while read destfile
+        ${sym_link_exts[@]} "$ext" | while read destfile
     do
         srcfile=$(convert_path "$src" "$dest" "$destfile" "$convpath" 1)
         if [ ! -e "$srcfile" ]
         then
-            rm -f "$destfile"
-        fi    
-    done
-
-    # remove transcoded files
-    find "$dest" -type f -iname "*.$ext" | while read destfile
-    do
-        file=$(convert_path "$src" "$dest" "$destfile" "$convpath" 1)
-        srcfile=${file%.*}.flac
-        srcfile2=${file%.*}.FLAC
-        if [ ! -e "$srcfile" -a ! -e "$srcfile2" ]
-        then
-            rm -f "$destfile"
+            if [ "${destfile##*.}" = "$ext" ]
+            then
+                srcfile1=${srcfile%.*}.flac
+                srcfile2=${srcfile%.*}.FLAC
+                if [ ! -e "$srcfile1" -a ! -e "$srcfile2" ]
+                then
+                    rm -f "$destfile"
+                fi
+            else
+                rm -f "$destfile"
+            fi
         fi
     done
 }
