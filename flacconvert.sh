@@ -148,15 +148,15 @@ function create_mp3
     done
 
     echo "Encoding `basename "$flacfile"` to $outputfile"
-    nice flac -dcs "$flacfile" | lame $opt \
+    (nice flac -dcs "$flacfile" 2>/dev/null | lame $opt \
     --tt "$TITLE" \
         --tn "$TRACKNUMBER" \
         --tg "$GENRE" \
         --ty "$DATE" \
         --ta "$ARTIST" \
         --tl "$ALBUM" \
-        - "$outputfile" &>/dev/null &
-    check_exit_codes flac lame
+        - "$outputfile" &>/dev/null
+    check_exit_codes flac lame) &
 }
 
 
@@ -171,9 +171,9 @@ function create_ogg
         sleep 1
     done
 
-    echo "Encoding `basename "$flacfile"` to $outputfile"
-    nice oggenc $opt "$flacfile" -o "$outputfile" &>/dev/null &
-    check_exit_codes oggenc
+    echo " Encoding `basename "$flacfile"` to $outputfile"
+    (nice oggenc $opt "$flacfile" -o "$outputfile" &>/dev/null
+    check_exit_codes oggenc) &
 }
 
 
@@ -205,7 +205,7 @@ function create_aac
     done
 
     echo "Encoding `basename "$flacfile"` to $outputfile"
-    nice flac -dcs "$flacfile" | faac $opt \
+    (nice flac -dcs "$flacfile" 2>/dev/null | faac $opt \
         --artist "$ARTIST" \
         --writer "$COMPOSER" \
         --title "$TITLE" \
@@ -216,8 +216,8 @@ function create_aac
         --year "$DATE" \
         --comment "$COMMENT" \
         -o "$outputfile" \
-        - &>/dev/null &
-    check_exit_codes flac faac
+        - &>/dev/null
+    check_exit_codes flac faac) &
 }
 
 
@@ -249,7 +249,7 @@ function create_naac
     done
 
     echo "Encoding `basename "$flacfile"` to $outputfile"
-    nice flac -dcs "$flacfile" | neroAacEnc $opt -if - -of "$outputfile" &>/dev/null &&
+    (nice flac -dcs "$flacfile" 2>/dev/null | neroAacEnc $opt -if - -of "$outputfile" &>/dev/null &&
     neroAacTag "$outputfile" \
         -meta:artist="$ARTIST" \
         -meta:composer="$COMPOSER" \
@@ -261,8 +261,8 @@ function create_naac
         -meta:disc="$DISCNUMBER" \
         -meta:year="$DATE" \
         -meta:comment="$COMMENT" \
-        &>/dev/null &
-    check_exit_codes flac neroAacEnc neroAacTag
+        &>/dev/null
+    check_exit_codes flac neroAacEnc neroAacTag) &
 }
 
 
