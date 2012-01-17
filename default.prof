@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Define the run level: 0 = transcode only; 1 = create .torrent files only; 2 = transcode and create .torrent files
 run_level="2"
 
