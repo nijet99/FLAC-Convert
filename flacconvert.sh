@@ -20,6 +20,36 @@
 #################################################################################
 
 
+if [ ! -n "$verbose" ]
+then
+    verbose=2
+fi
+
+
+function info
+{
+    if [ "$verbose" -ge 1 ]
+    then
+        echo "$(basename $0): $@"
+    fi
+}
+
+
+function debug
+{
+    if [ "$verbose" -ge 2 ]
+    then
+        echo "$(basename $0): $@"
+    fi
+}
+
+
+function warn
+{
+    echo "$(basename $0): WARNING: $@"
+}
+
+
 function usage
 {
     echo "Usage: $0 [profile.prof]"
@@ -75,7 +105,7 @@ function source_profile
         relative=0
     fi
 
-    echo "Using $profile"
+    info "Using $profile"
 
     source "$profile"
 }
@@ -102,12 +132,13 @@ function check_exit_codes
     do
         if [ $s -ne 0 ]
         then
-            echo "WARNING: Return code of ${args[$i]} indicates failure"
+            warn "Return code of ${args[$i]} indicates failure"
             break
         fi
         let i=$i+1
     done
 }
+
 
 function read_tags
 {
@@ -143,7 +174,7 @@ function create_mp3
         sleep 1
     done
 
-    echo "Encoding `basename "$flacfile"` to $outputfile"
+    debug "Encoding `basename "$flacfile"` to $outputfile"
     (nice flac -dcs "$flacfile" 2>/dev/null | lame $opt \
     --tt "$TITLE" \
         --tn "$TRACKNUMBER" \
@@ -167,7 +198,7 @@ function create_ogg
         sleep 1
     done
 
-    echo " Encoding `basename "$flacfile"` to $outputfile"
+    debug " Encoding `basename "$flacfile"` to $outputfile"
     (nice oggenc $opt "$flacfile" -o "$outputfile" &>/dev/null
     check_exit_codes oggenc) &
 }
@@ -186,7 +217,7 @@ function create_aac
         sleep 1
     done
 
-    echo "Encoding `basename "$flacfile"` to $outputfile"
+    debug "Encoding `basename "$flacfile"` to $outputfile"
     (nice flac -dcs "$flacfile" 2>/dev/null | faac $opt \
         --artist "$ARTIST" \
         --writer "$COMPOSER" \
@@ -216,7 +247,7 @@ function create_naac
         sleep 1
     done
 
-    echo "Encoding `basename "$flacfile"` to $outputfile"
+    debug "Encoding `basename "$flacfile"` to $outputfile"
     (nice flac -dcs "$flacfile" 2>/dev/null | neroAacEnc $opt -if - -of "$outputfile" &>/dev/null &&
     neroAacTag "$outputfile" \
         -meta:artist="$ARTIST" \
@@ -342,6 +373,7 @@ function create_torrents
             sleep 1
         done
         # start new job and add it to the background
+        debug "Creating $torrentpath$torrentfolder_new$outputfile"
         nice mktorrent -n "$torrentname$convpath" -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder" &
     fi
 }
@@ -420,7 +452,7 @@ function remove_obsolete_files
 source_profile "$@"
 [ $? -eq 0 ] || exit $?
 
-echo "Starting the flacconvert script."
+info "Starting the flacconvert script."
 
 # determine maximal number of parallel jobs and add 1
 maxnum=`grep -c '^processor' /proc/cpuinfo`
@@ -430,7 +462,7 @@ maxnum=$(($maxnum+$coreaddition))
 # check if current run level is set to create only .torrent files; if not, do conversion
 if [ "$run_level" != "1" ]
 then
-    echo "Starting conversion of flac files..."
+    info "Starting conversion of flac files..."
     # if the flac folder does not exist, skip completely as nothing can be converted
     if [ -d "$flacfolder" ]
     then
@@ -446,41 +478,64 @@ then
             esac
             destfolder="$basefolder$dest"
 
-            echo "... removing obsolete files..."
+            info "Starting conversion to $conv files..."
+
             if [ "$mirror" = "1" -a -d "$destfolder" ]
             then
+                info "... removing obsolete files..."
                 remove_obsolete_files "$destfolder" "$flacfolder" \
-                                         "$convpath" "$ext"
+                                      "$convpath" "$ext"
             fi
 
-            echo "... copying files..."
-            find_exts "$flacfolder" ${copy_exts[@]} | while read extfile
-            do
-                file="$(convert_path "$flacfolder" "$destfolder" \
-                                     "$extfile" "$convpath")"
-                mkdir -p "$(dirname "$file")"
-                cp -a -u "$extfile" "$file"
-            done
+            if [ ${#copy_exts[@]} -ge 1 ]
+            then
+                info "... copying files..."
+                find_exts "$flacfolder" ${copy_exts[@]} | while read extfile
+                do
+                    file="$(convert_path "$flacfolder" "$destfolder" \
+                                         "$extfile" "$convpath")"
+                    mkdir -p "$(dirname "$file")"
+                    if [ "$extfile" -nt "$file" ]
+                    then
+                        debug "Copying $extfile to $file"
+                        cp -a "$extfile" "$file"
+                    fi
+                done
+            fi
 
-            echo "... hard linking files..."
-            find_exts "$flacfolder" ${hard_link_exts[@]} | while read extfile
-            do
-                file="$(convert_path "$flacfolder" "$destfolder" \
-                                     "$extfile" "$convpath")"
-                mkdir -p "$(dirname "$file")"
-                [ -e "$file" ] || ln "$extfile" "$file"
-            done
+            if [ ${#hard_link_exts[@]} -ge 1 ]
+            then
+                info "... hard linking files..."
+                find_exts "$flacfolder" ${hard_link_exts[@]} | while read extfile
+                do
+                    file="$(convert_path "$flacfolder" "$destfolder" \
+                                         "$extfile" "$convpath")"
+                    mkdir -p "$(dirname "$file")"
+                    if [ ! -e "$file" ]
+                    then
+                        debug "Link $extfile to $file"
+                        ln "$extfile" "$file"
+                    fi
+                done
+            fi
 
-            echo "... symbolic linking files..."
-            find_exts "$flacfolder" ${sym_link_exts[@]} | while read extfile
-            do
-                file="$(convert_path "$flacfolder" "$destfolder" \
-                                     "$extfile" "$convpath")"
-                mkdir -p "$(dirname "$file")"
-                [ -e "$file" ] || ln -s "$extfile" "$file"
-            done
+            if [ ${#sym_link_exts[@]} -ge 1 ]
+            then
+                info "... symbolic linking files..."
+                find_exts "$flacfolder" ${sym_link_exts[@]} | while read extfile
+                do
+                    file="$(convert_path "$flacfolder" "$destfolder" \
+                                         "$extfile" "$convpath")"
+                    mkdir -p "$(dirname "$file")"
+                    if [ ! -e "$file" ]
+                    then
+                        debug "Link $extfile to $file"
+                        ln -s "$extfile" "$file"
+                    fi
+                done
+            fi
 
-            echo "... converting flac files..."
+            info "... converting flac files..."
             nice find "$flacfolder" -iname '*.flac' | while read flacfile
             do
                 outputfile="$(convert_path "$flacfolder" "$destfolder" \
@@ -491,9 +546,9 @@ then
                 convert_flacs "$flacfile" "$outputfile" "$opt"
             done
         done
-        echo "... conversion of flac files finished."
+        info "... conversion of flac files finished"
     else
-        echo "... no flac files found."
+        info "... no flac files found."
     fi
 fi
 
@@ -504,18 +559,18 @@ then
 	# make sure all conversion processes are finished
     for check_proc in ${processes_arr[@]}
     do
-        echo "... waiting for $check_proc to be finished ..."
+        info "... waiting for $check_proc to be finished ..."
         check=`pgrep $check_proc | wc -l`
         while [ "$check" -gt "0" ]; do
             sleep 1
-            echo "... waiting for $check_proc to be finished ..."
+            info "... waiting for $check_proc to be finished ..."
             check=`pgrep $check_proc | wc -l`
         done
-        echo "... $test_proc finished ..."
+        info "... $test_proc finished ..."
     done
 
     # create .torrent files
-    echo "Starting creation of .torrent files..."
+    info "Starting creation of .torrent files..."
     for I in ${!conv_arr[*]}
     do
         conv="${conv_arr[$I]}"
@@ -523,7 +578,7 @@ then
         ext="${ext_arr[$I]}"
         opt="${opt_arr[$I]}"
 
-        echo "... for $conv ..."
+        info "... for $conv ..."
 
         # go to the right folder
         case "$torrentsubfolder" in
@@ -540,18 +595,18 @@ then
                 # Last parameter "0" is for flagging that this is not flac_create
                 create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv" "$conv_create" "0"
             done
-            echo "... creation of .torrent files for $conv finished."
+            info "... creation of .torrent files for $conv finished."
         else
-            echo "... no .torrent files for $conv created."
+            info "... no .torrent files for $conv created."
         fi
     done
 
     # create .torrent files for the flac files
-    echo "Starting creation of .torrent files..."
+    info "Starting creation of .torrent files..."
     if [ "$flac_create" == "1" ]
     then
 
-        echo "... for $flac_conv ..."
+        info "... for $flac_conv ..."
 
         # go to the right folder
         case "$torrentsubfolder" in
@@ -568,9 +623,9 @@ then
                 # Use flac_type=1 to alaways add the $flac_conv to the torrent path
                 create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$flac_conv"  "$conv_create" "$flac_type"
             done
-            echo "... creation of .torrent files for $flac_conv finished."
+            info "... creation of .torrent files for $flac_conv finished."
         else
-            echo "... no .torrent files created."
+            info "... no .torrent files created."
         fi
     fi
 fi

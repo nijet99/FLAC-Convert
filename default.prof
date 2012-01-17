@@ -95,3 +95,6 @@ flac_sub="What_FLAC/"
 # Hence the script can't find free cores to work on. If that happens, set the option below to "1" (or more). This will enable to run more threads
 # than cores on the system and hence keep transcoding and creating torrent files.
 coreaddition="0" 
+
+# verbosity level: 0 - only warnings; 1 - + information messages; 2 - + debug messages
+verbose="2"
