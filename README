@@ -14,10 +14,10 @@ Features:
 
 
 Usage:
- - Customize your settings at the top of the script.
+ - Copy default.prof to myprofile.prof and customize the settings.
  - Comment out conv_arr entries for the formats you do not want to
    encode.
- - Run the script.
+ - Run the script: flacconvert.sh myprofile.prof
 
 
 Requirements:
