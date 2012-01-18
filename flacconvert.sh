@@ -20,108 +20,95 @@
 #################################################################################
 
 
-#################################################################################
-#                              DEFINE VARIABLES                                 #
-#################################################################################
+if [ ! -n "$verbose" ]
+then
+    verbose=2
+fi
 
-# Define the run level: 0 = transcode only; 1 = create .torrent files only; 2 = transcode and create .torrent files
-run_level="2"
 
-# Define announce url
-announce_url="http://tracker.domain.com/announce"
+function info
+{
+    if [ "$verbose" -ge 1 ]
+    then
+        echo "$(basename $0): $@"
+    fi
+}
 
-# Define the base folder from where everything else is relativ.
-# If you have no common basefolder leave this empty. Trailing slash required.
-basefolder="/home/${USER}/test/"
 
-# Define the folder where the flac albums can be found.
-# Trailing slash required.
-flacfolder=$basefolder"FLAC/"
+function debug
+{
+    if [ "$verbose" -ge 2 ]
+    then
+        echo "$(basename $0): $@"
+    fi
+}
 
-# Define the folder where the .torrent files shall be stored.
-# Trailing slash required.
-# DO NOT PUT THIS INSIDE THE INPUT FOLDER
-torrentfolder=$basefolder"torrents/"
 
-# If you want to have subfolders according to each conversion type (see below) set this value to 1
-torrentsubfolder="0"
+function warn
+{
+    echo "$(basename $0): WARNING: $@"
+}
 
-# Define a different folder for newly created torrents to be stored so that existing .torrent files won't be overwritten.
-# Trailing slash required.
-torrentfolder_new=$basefolder"torrents_new/"
 
-# Define the further files types that you also want to copy
-# All other files that are not flacs and neither one of the file types below will not get copied over
-# The file extensions are case-insensitive
-copy_exts=( jpg bmp gif jpeg png cue log )
+function usage
+{
+    echo "Usage: $0 [profile.prof]"
+}
 
-# Define the conversion "type". This is a reference for the other arrays and only those types will be converted to that are enabled here.
-# Also make sure that the array index number matches the one of the following arrays.
-conv_arr[1]="320"
-conv_arr[2]="V0"
-conv_arr[3]="V2"
-conv_arr[4]="OGG"
-conv_arr[5]="AAC"	# normal faac encoder / recommended to only use faac or only nero aac
-#conv_arr[6]="nAAC"	# nero aac encoder / recommended to only use faac or only nero aac
 
-# Define the destination folder for each type. Trailing slash required.
-dest_arr[1]="What_320/"
-dest_arr[2]="What_V0/"
-dest_arr[3]="What_V2/"
-dest_arr[4]="What_OGG/"
-dest_arr[5]="What_AAC/"
-dest_arr[6]="What_nAAC/"
+# source profile if specified, or default.prof
+function source_profile
+{
+    if [ $# = 0 ]
+    then
+        profile="default.prof"
+    elif [ $# = 1 ]
+    then
+        profile="$1"
+    else
+        usage
+        return 1
+    fi
 
-# Define the file extension for each type
-ext_arr[1]="mp3"
-ext_arr[2]="mp3"
-ext_arr[3]="mp3"
-ext_arr[4]="ogg"
-ext_arr[5]="m4a"
-ext_arr[6]="m4aNero"	# Although the "nero" is there, it will get ignored by the script - this is just to differentiate between the faac and nero encoder
+    # if no slash, then path is relative
+    if [ $(expr index / "$profile") = 0 ]
+    then
+        relative=1
+    else
+        relative=0
+    fi
 
-# Define the conversion options for each type
-opt_arr[1]="-b 320 --replaygain-accurate --id3v2-only"
-opt_arr[2]="--vbr-new -V 0 --replaygain-accurate --id3v2-only"
-opt_arr[3]="--vbr-new -V 2 --replaygain-accurate --id3v2-only"
-opt_arr[4]="-q 8"
-opt_arr[5]="-RCws -c 44100 -b 320" # For transcoding vinly those options are recommended: -RCws -c 48000 -b 320
-opt_arr[6]="-br 320000"
+    # try to find profile in the script directory
+    if [ ! -f "$profile" ]
+    then
+        if [ $relative = 1 ]
+        then
+            profile2="$(dirname "$0")/$profile"
+            if [ -f "$profile2" ]
+            then
+                profile="$profile2"
+                relative=0
+            else
+                echo "Neither $(pwd)/$profile, nor $profile2 exists"
+                return 1
+            fi
+        else
+            echo "File $profile doesn't exist"
+            return 1
+        fi
+    fi
 
-# Add conversion type name to the transcoded folders? Set "0" to NOT add and set "1" to add the conversion name.
-conv_create="1"
+    # this should prevent bash searching profile in PATH
+    if [ $relative = 1 ]
+    then
+        profile="$(pwd)/$profile"
+        relative=0
+    fi
 
-# There is currently a bug with mktorrent with the -n option. Basically -n should only change the name being displayed in the torrent client.
-# However if -n is used to alter the name it also alters the path. When you want to have displayes "torrent name [FLAC]" or anything else,
-# Then you'll also have to rename the folder / file to that. I have contacted the author of mktorrent here: http://github.com/esmil/mktorrent/issues#issue/2
-# If you still want to have a [FLAC] added to the torrent naming, then alter line 310 and change 2) to 1)
+    info "Using $profile"
 
-# If you want to also create .torrent files of your flacs then set this value to 1
-flac_create="1"
-
-# If you want to extend the name of the .torrent with a "type" then set this to 1
-flac_type="0"
-
-# Define what "type" name the .torrent file shall have
-flac_conv="FLAC"
-
-# Define what destination folder the flac .torrents shall go if individual subfolders is selected.
-# Trailing slash required.
-flac_sub="What_FLAC/"
-
-# If the script just sort of stops after first conversion or none at all, you may have to few cores so that they are always in use.
-# Hence the script can't find free cores to work on. If that happens, set the option below to "1" (or more). This will enable to run more threads
-# than cores on the system and hence keep transcoding and creating torrent files.
-coreaddition="0" 
-
-#################################################################################
-#                             DEFINE USER FUNCTIONS                             #
-#                               do not edit below                               #
-#################################################################################
-
-# determine maximal number of parallel jobs and add 1
-maxnum=`grep -c '^processor' /proc/cpuinfo`
-maxnum=$(($maxnum+$coreaddition))
+    source "$profile"
+}
 
 
 # enable ctrl-c abort
@@ -145,10 +132,27 @@ function check_exit_codes
     do
         if [ $s -ne 0 ]
         then
-            echo "WARNING: Return code of ${args[$i]} indicates failure"
+            warn "Return code of ${args[$i]} indicates failure"
             break
         fi
         let i=$i+1
+    done
+}
+
+
+function read_tags
+{
+    flacfile=$1
+
+    for tag in TITLE ARTIST ALBUM DISCNUMBER DATE TRACKNUMBER TRACKTOTAL \
+        GENRE DESCRIPTION COMMENT COMPOSER PERFORMER COPYRIGHT LICENCE \
+        ENCODEDBY REPLAYGAIN_REFERENCE_LOUDNESS REPLAYGAIN_TRACK_GAIN \
+        REPLAYGAIN_TRACK_PEAK REPLAYGAIN_ALBUM_GAIN REPLAYGAIN_ALBUM_PEAK
+    do
+        val=$(metaflac --show-tag=$tag "$flacfile" 2>/dev/null |
+            awk -F = '{ printf($2) }')
+        # make tag global
+        eval $tag=\""$val"\"
     done
 }
 
@@ -163,43 +167,23 @@ function create_mp3
     opt="$2"
     outputfile="$3"
 
-    # get the id tags... not all are supported by id3v2 for mp3s
-    TITLE="`metaflac --show-tag=TITLE "$flacfile" | awk -F = '{ printf($2) }'`"
-    ARTIST="`metaflac --show-tag=ARTIST "$flacfile" | awk -F = '{ printf($2) }'`"
-    ALBUM="`metaflac --show-tag=ALBUM "$flacfile" | awk -F = '{ printf($2) }'`"
-    DISCNUMBER="`metaflac --show-tag=DISCNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
-    DATE="`metaflac --show-tag=DATE "$flacfile" | awk -F = '{ printf($2) }'`"
-    TRACKNUMBER="`metaflac --show-tag=TRACKNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
-    TRACKTOTAL="`metaflac --show-tag=TRACKTOTAL "$flacfile" | awk -F = '{ printf($2) }'`"
-    GENRE="`metaflac --show-tag=GENRE "$flacfile" | awk -F = '{ printf($2) }'`"
-    DESCRIPTION="`metaflac --show-tag=DESCRIPTION "$flacfile" | awk -F = '{ printf($2) }'`"
-    COMMENT="`metaflac --show-tag=COMMENT "$flacfile" | awk -F = '{ printf($2) }'`"
-    COMPOSER="`metaflac --show-tag=COMPOSER "$flacfile" | awk -F = '{ printf($2) }'`"
-    PERFORMER="`metaflac --show-tag=PERFORMER "$flacfile" | awk -F = '{ printf($2) }'`"
-    COPYRIGHT="`metaflac --show-tag=COPYRIGHT "$flacfile" | awk -F = '{ printf($2) }'`"
-    LICENCE="`metaflac --show-tag=LICENCE "$flacfile" | awk -F = '{ printf($2) }'`"
-    ENCODEDBY="`metaflac --show-tag=ENCODED-BY "$flacfile" | awk -F = '{ printf($2) }'`"
-    REPLAYGAIN_REFERENCE_LOUDNESS="`metaflac --show-tag=REPLAYGAIN_REFERENCE_LOUDNESS "$flacfile" | awk -F = '{ printf($2) }'`"
-    REPLAYGAIN_TRACK_GAIN="`metaflac --show-tag=REPLAYGAIN_TRACK_GAIN "$flacfile" | awk -F = '{ printf($2) }'`"
-    REPLAYGAIN_TRACK_PEAK="`metaflac --show-tag=REPLAYGAIN_TRACK_PEAK "$flacfile" | awk -F = '{ printf($2) }'`"
-    REPLAYGAIN_ALBUM_GAIN="`metaflac --show-tag=REPLAYGAIN_ALBUM_GAIN "$flacfile" | awk -F = '{ printf($2) }'`"
-    REPLAYGAIN_ALBUM_PEAK="`metaflac --show-tag=REPLAYGAIN_ALBUM_PEAK "$flacfile" | awk -F = '{ printf($2) }'`"
+    read_tags "$flacfile"
 
     # sleep while max number of jobs are running
     until ((`jobs | wc -l` < maxnum)); do
         sleep 1
     done
 
-    echo "Encoding `basename "$flacfile"` to $outputfile"
-    nice flac -dcs "$flacfile" | lame $opt \
+    debug "Encoding `basename "$flacfile"` to $outputfile"
+    (nice flac -dcs "$flacfile" 2>/dev/null | lame $opt \
     --tt "$TITLE" \
         --tn "$TRACKNUMBER" \
         --tg "$GENRE" \
         --ty "$DATE" \
         --ta "$ARTIST" \
         --tl "$ALBUM" \
-        - "$outputfile" &>/dev/null &
-    check_exit_codes flac lame
+        - "$outputfile" &>/dev/null
+    check_exit_codes flac lame) &
 }
 
 
@@ -214,9 +198,9 @@ function create_ogg
         sleep 1
     done
 
-    echo "Encoding `basename "$flacfile"` to $outputfile"
-    nice oggenc $opt "$flacfile" -o "$outputfile" &>/dev/null &
-    check_exit_codes oggenc
+    debug " Encoding `basename "$flacfile"` to $outputfile"
+    (nice oggenc $opt "$flacfile" -o "$outputfile" &>/dev/null
+    check_exit_codes oggenc) &
 }
 
 
@@ -226,29 +210,15 @@ function create_aac
     opt="$2"
     outputfile="$3"
 
-    TITLE="`metaflac --show-tag=TITLE "$flacfile" | awk -F = '{ printf($2) }'`"
-    ARTIST="`metaflac --show-tag=ARTIST "$flacfile" | awk -F = '{ printf($2) }'`"
-    ALBUM="`metaflac --show-tag=ALBUM "$flacfile" | awk -F = '{ printf($2) }'`"
-    DISCNUMBER="`metaflac --show-tag=DISCNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
-    DATE="`metaflac --show-tag=DATE "$flacfile" | awk -F = '{ printf($2) }'`"
-    TRACKNUMBER="`metaflac --show-tag=TRACKNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
-    TRACKTOTAL="`metaflac --show-tag=TRACKTOTAL "$flacfile" | awk -F = '{ printf($2) }'`"
-    GENRE="`metaflac --show-tag=GENRE "$flacfile" | awk -F = '{ printf($2) }'`"
-    DESCRIPTION="`metaflac --show-tag=DESCRIPTION "$flacfile" | awk -F = '{ printf($2) }'`"
-    COMMENT="`metaflac --show-tag=COMMENT "$flacfile" | awk -F = '{ printf($2) }'`"
-    COMPOSER="`metaflac --show-tag=COMPOSER "$flacfile" | awk -F = '{ printf($2) }'`"
-    PERFORMER="`metaflac --show-tag=PERFORMER "$flacfile" | awk -F = '{ printf($2) }'`"
-    COPYRIGHT="`metaflac --show-tag=COPYRIGHT "$flacfile" | awk -F = '{ printf($2) }'`"
-    LICENCE="`metaflac --show-tag=LICENCE "$flacfile" | awk -F = '{ printf($2) }'`"
-    ENCODEDBY="`metaflac --show-tag=ENCODED-BY "$flacfile" | awk -F = '{ printf($2) }'`"
+    read_tags "$flacfile"
 
     # sleep while max number of jobs are running
     until ((`jobs | wc -l` < maxnum)); do
         sleep 1
     done
 
-    echo "Encoding `basename "$flacfile"` to $outputfile"
-    nice flac -dcs "$flacfile" | faac $opt \
+    debug "Encoding `basename "$flacfile"` to $outputfile"
+    (nice flac -dcs "$flacfile" 2>/dev/null | faac $opt \
         --artist "$ARTIST" \
         --writer "$COMPOSER" \
         --title "$TITLE" \
@@ -259,8 +229,8 @@ function create_aac
         --year "$DATE" \
         --comment "$COMMENT" \
         -o "$outputfile" \
-        - &>/dev/null &
-    check_exit_codes flac faac
+        - &>/dev/null
+    check_exit_codes flac faac) &
 }
 
 
@@ -269,30 +239,16 @@ function create_naac
     flacfile="$1"
     opt="$2"
     outputfile="$3"
- 
-    TITLE="`metaflac --show-tag=TITLE "$flacfile" | awk -F = '{ printf($2) }'`"
-    ARTIST="`metaflac --show-tag=ARTIST "$flacfile" | awk -F = '{ printf($2) }'`"
-    ALBUM="`metaflac --show-tag=ALBUM "$flacfile" | awk -F = '{ printf($2) }'`"
-    DISCNUMBER="`metaflac --show-tag=DISCNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
-    DATE="`metaflac --show-tag=DATE "$flacfile" | awk -F = '{ printf($2) }'`"
-    TRACKNUMBER="`metaflac --show-tag=TRACKNUMBER "$flacfile" | awk -F = '{ printf($2) }'`"
-    TRACKTOTAL="`metaflac --show-tag=TRACKTOTAL "$flacfile" | awk -F = '{ printf($2) }'`"
-    GENRE="`metaflac --show-tag=GENRE "$flacfile" | awk -F = '{ printf($2) }'`"
-    DESCRIPTION="`metaflac --show-tag=DESCRIPTION "$flacfile" | awk -F = '{ printf($2) }'`"
-    COMMENT="`metaflac --show-tag=COMMENT "$flacfile" | awk -F = '{ printf($2) }'`"
-    COMPOSER="`metaflac --show-tag=COMPOSER "$flacfile" | awk -F = '{ printf($2) }'`"
-    PERFORMER="`metaflac --show-tag=PERFORMER "$flacfile" | awk -F = '{ printf($2) }'`"
-    COPYRIGHT="`metaflac --show-tag=COPYRIGHT "$flacfile" | awk -F = '{ printf($2) }'`"
-    LICENCE="`metaflac --show-tag=LICENCE "$flacfile" | awk -F = '{ printf($2) }'`"
-    ENCODEDBY="`metaflac --show-tag=ENCODED-BY "$flacfile" | awk -F = '{ printf($2) }'`"
+
+    read_tags "$flacfile"
 
     # sleep while max number of jobs are running
     until ((`jobs | wc -l` < maxnum)); do
         sleep 1
     done
 
-    echo "Encoding `basename "$flacfile"` to $outputfile"
-    nice flac -dcs "$flacfile" | neroAacEnc $opt -if - -of "$outputfile" &>/dev/null &&
+    debug "Encoding `basename "$flacfile"` to $outputfile"
+    (nice flac -dcs "$flacfile" 2>/dev/null | neroAacEnc $opt -if - -of "$outputfile" &>/dev/null &&
     neroAacTag "$outputfile" \
         -meta:artist="$ARTIST" \
         -meta:composer="$COMPOSER" \
@@ -304,8 +260,45 @@ function create_naac
         -meta:disc="$DISCNUMBER" \
         -meta:year="$DATE" \
         -meta:comment="$COMMENT" \
-        &>/dev/null &
-    check_exit_codes flac neroAacEnc neroAacTag
+        &>/dev/null
+    check_exit_codes flac neroAacEnc neroAacTag) &
+}
+
+
+function convert_path
+{
+    local base="$1"             # with trailing slash
+    local dest="$2"             # with trailing slash
+    local file="$3"             # full path
+    local convpath="$4"         # suffix
+    local backwards="$5"        # whether file is a destination file,
+                                # if so, convert it to the source file
+
+    if [ "$backwards" = "1" ]
+    then
+        local tmp=$base
+        base=$dest
+        dest=$tmp
+    fi
+
+    # files right under dest shall not have convpath
+    if [ -f "$file" -a "${file%/*}/" = "$base" ]
+    then
+        convpath=
+    fi
+
+    file=${file#"$base"}
+    file_substring=${file%%/*}
+    local replacement=$dest$file_substring
+    if [ "$backwards" = "1" ]
+    then
+        replacement=${replacement%"$convpath"}
+    else
+        replacement=$replacement$convpath
+    fi
+    file=${file/#"$file_substring"/"$replacement"}
+
+    echo "$file"
 }
 
 
@@ -313,21 +306,11 @@ function convert_flacs
 {
     # getting the parameters
     flacfile="$1"
-    basefolder="$2"
-    ext="$3"
-    opt="$4"
-    convpath="$5"
+    outputfile="$2"
+    opt="$3"
 
-    # set right filename for transcoded file
-    file="${flacfile#*/}"
-    file_substring=${file%%/*}
-    replacement="./$file_substring$convpath"
-    file=${file/#"$file_substring"/"$replacement"}
-    if [ "$ext" = "m4aNero" ]; then
-        outputfile="$basefolder$dest${file%*.*}.m4a"
-    else
-        outputfile="$basefolder$dest${file%*.*}.$ext"
-    fi
+    ext="${outputfile##*.}"
+    outputfile="$(sed "s/\.m4aNero$/.m4a/" <<< "$outputfile")"
 
     # check if the encoded file is older than the original flac file; if so, encode it!
     if [ "$flacfile" -nt "$outputfile" ]
@@ -390,8 +373,72 @@ function create_torrents
             sleep 1
         done
         # start new job and add it to the background
+        debug "Creating $torrentpath$torrentfolder_new$outputfile"
         nice mktorrent -n "$torrentname$convpath" -p -a "$announce" -o "$torrentpath$torrentfolder_new$outputfile" "$sourcefolder" &
     fi
+}
+
+
+# list all files with specified extensions in the specified directory
+function find_exts
+{
+    local path="$1"
+    shift
+    local exts=$@
+    [ $# -eq 0 ] && return 0
+
+    for fileext in ${exts[@]}
+    do
+        expr="$expr -o -iname \"*.$fileext\""
+    done
+    expr=${expr# -o }
+    eval "nice find $path -type f $expr"
+}
+
+# remove destination files and folders if corresponding files in flac folder
+# don't exist anymore
+function remove_obsolete_files
+{
+    local dest="$1"             # destination folder with trailing slash
+    local src="$2"              # flac folder with trailing slash
+    local convpath="$3"         # suffix
+    local ext="$4"              # extension of trancscoded files
+
+    ext="$(sed "s/^m4aNero$/m4a/" <<< "$ext")"
+
+    # remove folders
+    find "$dest" -type d | while read folder
+    do
+        if [ -d "$folder" ]     # skip already removed folders
+        then
+            srcfolder=$(convert_path "$src" "$dest" "$folder" "$convpath" 1)
+            if [ ! -d "$srcfolder" ]
+            then
+                rm -Rf "$folder"
+            fi
+        fi
+    done
+
+    # remove copied, linked and transcoded files
+    find_exts "$dest" ${copy_exts[@]} ${hard_link_exts[@]} \
+        ${sym_link_exts[@]} "$ext" | while read destfile
+    do
+        srcfile=$(convert_path "$src" "$dest" "$destfile" "$convpath" 1)
+        if [ ! -e "$srcfile" ]
+        then
+            if [ "${destfile##*.}" = "$ext" ]
+            then
+                srcfile1=${srcfile%.*}.flac
+                srcfile2=${srcfile%.*}.FLAC
+                if [ ! -e "$srcfile1" -a ! -e "$srcfile2" ]
+                then
+                    rm -f "$destfile"
+                fi
+            else
+                rm -f "$destfile"
+            fi
+        fi
+    done
 }
 
 
@@ -401,13 +448,21 @@ function create_torrents
 #                               do not edit below                               #
 #################################################################################
 
-echo "Starting the flacconvert script."
+
+source_profile "$@"
+[ $? -eq 0 ] || exit $?
+
+info "Starting the flacconvert script."
+
+# determine maximal number of parallel jobs and add 1
+maxnum=`grep -c '^processor' /proc/cpuinfo`
+maxnum=$(($maxnum+$coreaddition))
 
 # convert flacs
 # check if current run level is set to create only .torrent files; if not, do conversion
 if [ "$run_level" != "1" ]
 then
-    echo "Starting conversion of flac files..."
+    info "Starting conversion of flac files..."
     # if the flac folder does not exist, skip completely as nothing can be converted
     if [ -d "$flacfolder" ]
     then
@@ -421,43 +476,79 @@ then
                 1) convpath=" [$conv]";;
                 *) convpath="";;
             esac
+            destfolder="$basefolder$dest"
 
-            cd "$flacfolder"
-            dest="${dest_arr[$I]}"
-            # create folder structure
-            find -type d | grep -v '^\.$' | while read folder
-            do
-                # change destination path
-                folder="${folder#*/}"
-                folder_substring=${folder%%/*}
-                replacement="./$folder_substring$convpath"
-                folder=${folder/#"$folder_substring"/"$replacement"}
-                mkdir -p "$basefolder$dest$folder"
-            done
-            # copy desired non-flac files
-            for fileext in ${copy_exts[@]}
-            do
-                echo "... copying $fileext files..."
-                nice find . -iname "*.$fileext" | while read extfile
+            info "Starting conversion to $conv files..."
+
+            if [ "$mirror" = "1" -a -d "$destfolder" ]
+            then
+                info "... removing obsolete files..."
+                remove_obsolete_files "$destfolder" "$flacfolder" \
+                                      "$convpath" "$ext"
+            fi
+
+            if [ ${#copy_exts[@]} -ge 1 ]
+            then
+                info "... copying files..."
+                find_exts "$flacfolder" ${copy_exts[@]} | while read extfile
                 do
-                    # change destination path
-                    file=$extfile
-                    file="${file#*/}"
-                    file_substring=${file%%/*}
-                    replacement="./$file_substring$convpath"
-                    file=${file/#"$file_substring"/"$replacement"}
-                    cp -a -u "$extfile" "$basefolder$dest$file"
+                    file="$(convert_path "$flacfolder" "$destfolder" \
+                                         "$extfile" "$convpath")"
+                    mkdir -p "$(dirname "$file")"
+                    if [ "$extfile" -nt "$file" ]
+                    then
+                        debug "Copying $extfile to $file"
+                        cp -a "$extfile" "$file"
+                    fi
                 done
-            done
-            nice find . -iname '*.flac' | while read flacfile
+            fi
+
+            if [ ${#hard_link_exts[@]} -ge 1 ]
+            then
+                info "... hard linking files..."
+                find_exts "$flacfolder" ${hard_link_exts[@]} | while read extfile
+                do
+                    file="$(convert_path "$flacfolder" "$destfolder" \
+                                         "$extfile" "$convpath")"
+                    mkdir -p "$(dirname "$file")"
+                    if [ ! -e "$file" ]
+                    then
+                        debug "Link $extfile to $file"
+                        ln "$extfile" "$file"
+                    fi
+                done
+            fi
+
+            if [ ${#sym_link_exts[@]} -ge 1 ]
+            then
+                info "... symbolic linking files..."
+                find_exts "$flacfolder" ${sym_link_exts[@]} | while read extfile
+                do
+                    file="$(convert_path "$flacfolder" "$destfolder" \
+                                         "$extfile" "$convpath")"
+                    mkdir -p "$(dirname "$file")"
+                    if [ ! -e "$file" ]
+                    then
+                        debug "Link $extfile to $file"
+                        ln -s "$extfile" "$file"
+                    fi
+                done
+            fi
+
+            info "... converting flac files..."
+            nice find "$flacfolder" -iname '*.flac' | while read flacfile
             do
+                outputfile="$(convert_path "$flacfolder" "$destfolder" \
+                                           "$flacfile" "$convpath")"
+                mkdir -p "$(dirname "$outputfile")"
+                outputfile="${outputfile%.*}.$ext"
                 # run convert_flacs function
-                convert_flacs "$flacfile" "$basefolder" "$ext" "$opt" "$convpath"
+                convert_flacs "$flacfile" "$outputfile" "$opt"
             done
         done
-        echo "... conversion of flac files finished."
+        info "... conversion of flac files finished"
     else
-        echo "... no flac files found."
+        info "... no flac files found."
     fi
 fi
 
@@ -468,18 +559,18 @@ then
 	# make sure all conversion processes are finished
     for check_proc in ${processes_arr[@]}
     do
-        echo "... waiting for $check_proc to be finished ..."
+        info "... waiting for $check_proc to be finished ..."
         check=`pgrep $check_proc | wc -l`
         while [ "$check" -gt "0" ]; do
             sleep 1
-            echo "... waiting for $check_proc to be finished ..."
+            info "... waiting for $check_proc to be finished ..."
             check=`pgrep $check_proc | wc -l`
         done
-        echo "... $test_proc finished ..."
+        info "... $test_proc finished ..."
     done
 
     # create .torrent files
-    echo "Starting creation of .torrent files..."
+    info "Starting creation of .torrent files..."
     for I in ${!conv_arr[*]}
     do
         conv="${conv_arr[$I]}"
@@ -487,7 +578,7 @@ then
         ext="${ext_arr[$I]}"
         opt="${opt_arr[$I]}"
 
-        echo "... for $conv ..."
+        info "... for $conv ..."
 
         # go to the right folder
         case "$torrentsubfolder" in
@@ -504,18 +595,18 @@ then
                 # Last parameter "0" is for flagging that this is not flac_create
                 create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv" "$conv_create" "0"
             done
-            echo "... creation of .torrent files for $conv finished."
+            info "... creation of .torrent files for $conv finished."
         else
-            echo "... no .torrent files for $conv created."
+            info "... no .torrent files for $conv created."
         fi
     done
 
     # create .torrent files for the flac files
-    echo "Starting creation of .torrent files..."
+    info "Starting creation of .torrent files..."
     if [ "$flac_create" == "1" ]
     then
 
-        echo "... for $flac_conv ..."
+        info "... for $flac_conv ..."
 
         # go to the right folder
         case "$torrentsubfolder" in
@@ -532,9 +623,9 @@ then
                 # Use flac_type=1 to alaways add the $flac_conv to the torrent path
                 create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$flac_conv"  "$conv_create" "$flac_type"
             done
-            echo "... creation of .torrent files for $flac_conv finished."
+            info "... creation of .torrent files for $flac_conv finished."
         else
-            echo "... no .torrent files created."
+            info "... no .torrent files created."
         fi
     fi
 fi
