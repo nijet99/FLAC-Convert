@@ -151,8 +151,9 @@ function read_tags
     do
         val=$(metaflac --show-tag=$tag "$flacfile" 2>/dev/null |
             awk -F = '{ printf($2) }')
-        # make tag global
-        eval $tag=\""$val"\"
+        # make tag global (declare -g was added in bash 4.2,
+        # printf -v was added in bash 3.1, eval is unsafe)
+        printf -v $tag %s "$val"
     done
 }
 
