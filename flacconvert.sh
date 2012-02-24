@@ -142,12 +142,10 @@ function check_exit_codes
 
 function read_tags
 {
-    flacfile=$1
+    flacfile="$1"
+    shift
 
-    for tag in TITLE ARTIST ALBUM DISCNUMBER DATE TRACKNUMBER TRACKTOTAL \
-        GENRE DESCRIPTION COMMENT COMPOSER PERFORMER COPYRIGHT LICENCE \
-        ENCODEDBY REPLAYGAIN_REFERENCE_LOUDNESS REPLAYGAIN_TRACK_GAIN \
-        REPLAYGAIN_TRACK_PEAK REPLAYGAIN_ALBUM_GAIN REPLAYGAIN_ALBUM_PEAK
+    for tag in "$@"
     do
         val=$(metaflac --show-tag=$tag "$flacfile" 2>/dev/null |
             awk -F = '{ printf($2) }')
@@ -168,14 +166,16 @@ function create_mp3
     opt="$2"
     outputfile="$3"
 
-    read_tags "$flacfile"
-
     switches=(--tt --tn --tg --ty --ta --tl)
-    tags=("$TITLE" "$TRACKNUMBER" "$GENRE" "$DATE" "$ARTIST" "$ALBUM")
+    tags=(TITLE TRACKNUMBER GENRE DATE ARTIST ALBUM)
+    
+    read_tags "$flacfile" "${tags[@]}"
+
     tag_opts=()
     for i in "${!switches[@]}"; do
         s="${switches[$i]}"
         t="${tags[$i]}"
+        t="${!t}"
         if [ -n "$t" ] ; then
             tag_opts+=("$s" "$t")
         fi
@@ -216,22 +216,21 @@ function create_aac
     opt="$2"
     outputfile="$3"
 
-    read_tags "$flacfile"
+    switches=(--artist --writer --title --genre --album --track --disc
+              --year --comment)
+    tags=(ARTIST COMPOSER TITLE GENRE ALBUM TRACKNUMBER DISCNUMBER DATE COMMENT)
+
+    read_tags "$flacfile" "${tags[@]}"
 
     if [ -n "$TRACKTOTAL" ] && [ -n "$TRACKNUMBER" ]; then
-        TRACK="$TRACKNUMBER/$TRACKTOTAL"
-    else
-        TRACK="$TRACKNUMBER"
+        TRACKNUMBER="$TRACKNUMBER/$TRACKTOTAL"
     fi
 
-    switches=(--artist --writer --title --genre --album --track --disc
-        --year --comment)
-    tags=("$ARTIST" "$COMPOSER" "$TITLE" "$GENRE" "$ALBUM"
-        "$TRACK" "$DISCNUMBER" "$DATE" "$COMMENT")
     tag_opts=()
     for i in "${!switches[@]}"; do
         s="${switches[$i]}"
         t="${tags[$i]}"
+        t="${!t}"
         if [ -n "$t" ] ; then
             tag_opts+=("$s" "$t")
         fi
@@ -255,16 +254,18 @@ function create_naac
     opt="$2"
     outputfile="$3"
 
-    read_tags "$flacfile"
-
     switches=(-meta:artist -meta:composer -meta:title -meta:genre -meta:album
         -meta:track -meta:totaltracks -meta:disc -meta:year -meta:comment)
-    tags=("$ARTIST" "$COMPOSER" "$TITLE" "$GENRE" "$ALBUM" "$TRACKNUMBER"
-        "$TRACKTOTAL" "$DISCNUMBER" "$DATE" "$COMMENT")
+    tags=(ARTIST COMPOSER TITLE GENRE ALBUM TRACKNUMBER TRACKTOTAL DISCNUMBER
+        DATE COMMENT)
+
+    read_tags "$flacfile"
+
     tag_opts=()
     for i in "${!switches[@]}"; do
         s="${switches[$i]}"
         t="${tags[$i]}"
+        t="${!t}"
         if [ -n "$t" ] ; then
             tag_opts+=("$s" "$t")
         fi
