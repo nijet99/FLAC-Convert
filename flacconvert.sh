@@ -142,17 +142,16 @@ function check_exit_codes
 
 function read_tags
 {
-    flacfile=$1
+    flacfile="$1"
+    shift
 
-    for tag in TITLE ARTIST ALBUM DISCNUMBER DATE TRACKNUMBER TRACKTOTAL \
-        GENRE DESCRIPTION COMMENT COMPOSER PERFORMER COPYRIGHT LICENCE \
-        ENCODEDBY REPLAYGAIN_REFERENCE_LOUDNESS REPLAYGAIN_TRACK_GAIN \
-        REPLAYGAIN_TRACK_PEAK REPLAYGAIN_ALBUM_GAIN REPLAYGAIN_ALBUM_PEAK
+    for tag in "$@"
     do
         val=$(metaflac --show-tag=$tag "$flacfile" 2>/dev/null |
             awk -F = '{ printf($2) }')
-        # make tag global
-        eval $tag=\""$val"\"
+        # make tag global (declare -g was added in bash 4.2,
+        # printf -v was added in bash 3.1, eval is unsafe)
+        printf -v $tag %s "$val"
     done
 }
 
@@ -167,7 +166,20 @@ function create_mp3
     opt="$2"
     outputfile="$3"
 
-    read_tags "$flacfile"
+    switches=(--tt --tn --tg --ty --ta --tl)
+    tags=(TITLE TRACKNUMBER GENRE DATE ARTIST ALBUM)
+    
+    read_tags "$flacfile" "${tags[@]}"
+
+    tag_opts=()
+    for i in "${!switches[@]}"; do
+        s="${switches[$i]}"
+        t="${tags[$i]}"
+        t="${!t}"
+        if [ -n "$t" ] ; then
+            tag_opts+=("$s" "$t")
+        fi
+    done
 
     # sleep while max number of jobs are running
     until ((`jobs | wc -l` < maxnum)); do
@@ -176,13 +188,7 @@ function create_mp3
 
     debug "Encoding `basename "$flacfile"` to $outputfile"
     (nice flac -dcs "$flacfile" 2>/dev/null | lame $opt \
-    --tt "$TITLE" \
-        --tn "$TRACKNUMBER" \
-        --tg "$GENRE" \
-        --ty "$DATE" \
-        --ta "$ARTIST" \
-        --tl "$ALBUM" \
-        - "$outputfile" &>/dev/null
+        "${tag_opts[@]}" - "$outputfile" &>/dev/null
     check_exit_codes flac lame) &
 }
 
@@ -210,7 +216,25 @@ function create_aac
     opt="$2"
     outputfile="$3"
 
-    read_tags "$flacfile"
+    switches=(--artist --writer --title --genre --album --track --disc
+              --year --comment)
+    tags=(ARTIST COMPOSER TITLE GENRE ALBUM TRACKNUMBER DISCNUMBER DATE COMMENT)
+
+    read_tags "$flacfile" "${tags[@]}"
+
+    if [ -n "$TRACKTOTAL" ] && [ -n "$TRACKNUMBER" ]; then
+        TRACKNUMBER="$TRACKNUMBER/$TRACKTOTAL"
+    fi
+
+    tag_opts=()
+    for i in "${!switches[@]}"; do
+        s="${switches[$i]}"
+        t="${tags[$i]}"
+        t="${!t}"
+        if [ -n "$t" ] ; then
+            tag_opts+=("$s" "$t")
+        fi
+    done
 
     # sleep while max number of jobs are running
     until ((`jobs | wc -l` < maxnum)); do
@@ -219,17 +243,7 @@ function create_aac
 
     debug "Encoding `basename "$flacfile"` to $outputfile"
     (nice flac -dcs "$flacfile" 2>/dev/null | faac $opt \
-        --artist "$ARTIST" \
-        --writer "$COMPOSER" \
-        --title "$TITLE" \
-        --genre "$GENRE" \
-        --album "$ALBUM" \
-        --track "$TRACKNUMBER/$TRACKTOTAL" \
-        --disc "$DISCNUMBER" \
-        --year "$DATE" \
-        --comment "$COMMENT" \
-        -o "$outputfile" \
-        - &>/dev/null
+        "${tag_opts[@]}" -o "$outputfile" - &>/dev/null
     check_exit_codes flac faac) &
 }
 
@@ -240,7 +254,22 @@ function create_naac
     opt="$2"
     outputfile="$3"
 
+    switches=(-meta:artist -meta:composer -meta:title -meta:genre -meta:album
+        -meta:track -meta:totaltracks -meta:disc -meta:year -meta:comment)
+    tags=(ARTIST COMPOSER TITLE GENRE ALBUM TRACKNUMBER TRACKTOTAL DISCNUMBER
+        DATE COMMENT)
+
     read_tags "$flacfile"
+
+    tag_opts=()
+    for i in "${!switches[@]}"; do
+        s="${switches[$i]}"
+        t="${tags[$i]}"
+        t="${!t}"
+        if [ -n "$t" ] ; then
+            tag_opts+=("$s" "$t")
+        fi
+    done
 
     # sleep while max number of jobs are running
     until ((`jobs | wc -l` < maxnum)); do
@@ -249,18 +278,7 @@ function create_naac
 
     debug "Encoding `basename "$flacfile"` to $outputfile"
     (nice flac -dcs "$flacfile" 2>/dev/null | neroAacEnc $opt -if - -of "$outputfile" &>/dev/null &&
-    neroAacTag "$outputfile" \
-        -meta:artist="$ARTIST" \
-        -meta:composer="$COMPOSER" \
-        -meta:title="$TITLE" \
-        -meta:genre="$GENRE" \
-        -meta:album="$ALBUM" \
-        -meta:track="$TRACKNUMBER" \
-        -meta:totaltracks="$TRACKTOTAL" \
-        -meta:disc="$DISCNUMBER" \
-        -meta:year="$DATE" \
-        -meta:comment="$COMMENT" \
-        &>/dev/null
+    neroAacTag "$outputfile" "${tag_opts[@]}" &>/dev/null
     check_exit_codes flac neroAacEnc neroAacTag) &
 }
 
