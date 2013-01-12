@@ -259,7 +259,7 @@ function create_naac
     tags=(ARTIST COMPOSER TITLE GENRE ALBUM TRACKNUMBER TRACKTOTAL DISCNUMBER
         DATE COMMENT)
 
-    read_tags "$flacfile"
+    read_tags "$flacfile" "${tags[@]}"
 
     tag_opts=()
     for i in "${!switches[@]}"; do
@@ -267,7 +267,7 @@ function create_naac
         t="${tags[$i]}"
         t="${!t}"
         if [ -n "$t" ] ; then
-            tag_opts+=("$s" "$t")
+            tag_opts+=("$s=$t")
         fi
     done
 
