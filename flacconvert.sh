@@ -370,7 +370,8 @@ function create_torrents
         2) convpath=" [$conv]";;
         *) convpath="";;
 	esac
-    outputfile="$sourcefolder$convpath.torrent"
+    # sourcefolder may contain slashes, but outputfile must not
+    outputfile="${sourcefolder##*/}$convpath.torrent"
 
     # create torrent
     if [ ! -f "$torrentpath$outputfile" ]
@@ -605,9 +606,8 @@ then
         esac
         if [ -d "$basefolder$dest" ]
         then
-            cd "$basefolder$dest"
             # run the create torrent script, skip top directory
-            find . -maxdepth 1 -type d | grep -v '^\.$' | while read sourcefolder
+            find "$basefolder$dest" -maxdepth 1 -type d | grep -v "^$basefolder$dest\$" | while read sourcefolder
             do
                 # run create_torrents function
                 # Last parameter "0" is for flagging that this is not flac_create
@@ -633,9 +633,8 @@ then
         esac
         if [ -d "$flacfolder" ]
         then
-            cd "$flacfolder"
             # run the create torrent script, skip top directory
-            find . -maxdepth 1 -type d |grep -v '^\.$' | while read sourcefolder
+            find "$flacfolder" -maxdepth 1 -type d | grep -v "^$flacfolder\$" | while read sourcefolder
             do
                 # run create_torrents function
                 # Use flac_type=1 to alaways add the $flac_conv to the torrent path
