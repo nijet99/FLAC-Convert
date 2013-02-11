@@ -155,10 +155,6 @@ function read_tags
     done
 }
 
-processes_arr[1]="lame"
-processes_arr[2]="oggenc"
-processes_arr[3]="faac"
-processes_arr[4]="neroAacEnc"
 
 function create_mp3
 {
@@ -555,7 +551,7 @@ then
             fi
 
             info "... converting flac files..."
-            nice find "$flacfolder" -iname '*.flac' | while read flacfile
+            while read flacfile
             do
                 outputfile="$(convert_path "$flacfolder" "$destfolder" \
                                            "$flacfile" "$convpath")"
@@ -563,8 +559,11 @@ then
                 outputfile="${outputfile%.*}.$ext"
                 # run convert_flacs function
                 convert_flacs "$flacfile" "$outputfile" "$opt"
-            done
+            # use process substitution instead of pipes to make wait work
+            # as wait won't wait for processes spawned by a subshell
+            done < <(nice find "$flacfolder" -iname '*.flac' )
         done
+        wait
         info "... conversion of flac files finished"
     else
         info "... no flac files found."
@@ -574,19 +573,6 @@ fi
 # check if current run level is set to only convert music files; if not, create .torrents
 if [ "$run_level" != "0" ]
 then
-
-	# make sure all conversion processes are finished
-    for check_proc in ${processes_arr[@]}
-    do
-        info "... waiting for $check_proc to be finished ..."
-        check=`pgrep $check_proc | wc -l`
-        while [ "$check" -gt "0" ]; do
-            sleep 1
-            info "... waiting for $check_proc to be finished ..."
-            check=`pgrep $check_proc | wc -l`
-        done
-        info "... $test_proc finished ..."
-    done
 
     # create .torrent files
     info "Starting creation of .torrent files..."
@@ -607,12 +593,12 @@ then
         if [ -d "$basefolder$dest" ]
         then
             # run the create torrent script, skip top directory
-            find "$basefolder$dest" -maxdepth 1 -type d | grep -v "^$basefolder$dest\$" | while read sourcefolder
+            while read sourcefolder
             do
                 # run create_torrents function
                 # Last parameter "0" is for flagging that this is not flac_create
                 create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$conv" "$conv_create" "0"
-            done
+            done < <(find "$basefolder$dest" -maxdepth 1 -type d | grep -v "^$basefolder$dest\$")
             info "... creation of .torrent files for $conv finished."
         else
             info "... no .torrent files for $conv created."
@@ -634,15 +620,17 @@ then
         if [ -d "$flacfolder" ]
         then
             # run the create torrent script, skip top directory
-            find "$flacfolder" -maxdepth 1 -type d | grep -v "^$flacfolder\$" | while read sourcefolder
+            while read sourcefolder
             do
                 # run create_torrents function
                 # Use flac_type=1 to alaways add the $flac_conv to the torrent path
                 create_torrents "$sourcefolder" "$announce_url" "$torrentpath" "$torrentfolder_new" "$flac_conv"  "$conv_create" "$flac_type"
-            done
+            done < <(find "$flacfolder" -maxdepth 1 -type d | grep -v "^$flacfolder\$")
             info "... creation of .torrent files for $flac_conv finished."
         else
             info "... no .torrent files created."
         fi
     fi
+    wait
+    info "... creation of .torrent files finished."
 fi
