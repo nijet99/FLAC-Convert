@@ -407,7 +407,7 @@ function find_exts
         expr="$expr -o -iname \"*.$fileext\""
     done
     expr=${expr# -o }
-    eval "nice find $path -type f $expr"
+    eval "nice find \"$path\" -type f $expr"
 }
 
 # remove destination files and folders if corresponding files in flac folder
